@@ -139,6 +139,16 @@ public:
 
 class HyperbolicOrbit : public Orbit {
   Real rp, vp, vi, t, e, d;
+  void calcrpvp();
+  void calcrpvi();
+  void calcerp();
+  void calcdrp();
+  void calcvpvi();
+  void calcevp();
+  void calcdvp();
+  void calcevi();
+  void calcde();
+  void calcdvi();
 public:
   HyperbolicOrbit(const Skybody& b)
   : Orbit(b), rp(NAN), vp(NAN), vi(NAN), t(NAN), e(NAN), d(NAN) {}

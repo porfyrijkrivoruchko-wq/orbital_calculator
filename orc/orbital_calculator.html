@@ -79,6 +79,15 @@
         p.setPerigey=this.radius;
       return h;
     }
+    function CheckCircle() {
+      if(this.radius && this.radius<this.center.radius)
+        return false;
+      if(this.speed && this.speed<=0)
+        return false;
+      if(this.period && this.period<=0)
+        return false;
+      return true;
+    }
     function CircleOrbit(b) {
       this.center=b;
       this.setRadius=setRadiusCircle;
@@ -89,6 +98,7 @@
       this.ellipse=Circle2Ellipse;
       this.parabolic=Circle2Parabolic;
       this.hyperbolic=Circle2Hyperbolic;
+      this.check=CheckCircle;
     }
     function setPerigeyEllipse(p) {
       this.perigey=p*document.getElementById('epunit').value;
@@ -476,6 +486,20 @@
           h.setExcentrisitet(this.excentrisitet);
       return h;
     }
+    function CheckEllipse() {
+      if(this.perigey)
+        if(this.perigey<this.center.radius)
+          return false;
+        else if(this.apogey && this.perigey>this.apogey)
+          return false;
+      if(this.excentrisitet && (this.excentrisitet<0 || this.excentrisitet>=1.))
+        return false;
+      if(this.a && this.a<this.center.radius)
+        return false;
+      if(this.b && this.b<this.center.radius)
+        return false;
+      return true;
+    }
     function EllipseOrbit(b) {
       this.center=b;
       this.setPerigey=setPerigeyEllipse;
@@ -490,6 +514,7 @@
       this.ellipse=Ellipse2Ellipse;
       this.parabolic=Ellipse2Parabolic;
       this.hyperbolic=Ellipse2Hyperbolic;
+      this.check=CheckEllipse;
     }
     function setPerigeyParabolic(p) {
       this.perigey=p;
@@ -524,6 +549,11 @@
         h.setPerigey(this.perigey);
       return h;
     }
+    function CheckParabolic() {
+      if(this.perigey && this.perigey<this.center.radius)
+        return false;
+      return true;
+    }
     function ParabolicOrbit(b) {
       this.center=b;
       this.setPerigey=setPerigeyParabolic;
@@ -533,6 +563,7 @@
       this.ellipse=Parabolic2Ellipse;
       this.parabolic=Parabolic2Parabolic;
       this.hyperbolic=Parabolic2Hyperbolic;
+      this.check=CheckParabolic;
     }
     function setPerigeyHyperbolic(p) {
       this.perigey=p;
@@ -701,6 +732,19 @@
     function Hyperbolic2Hyperbolic() {
       return this;
     }
+    function CheckHyperbolic() {
+      if(this.perigey && this.perigey<this.center.radius)
+        return false;
+      if(this.excentrisitet && this.excentrisitet<1.)
+        return false;
+      if(this.pspeed && this.pspeed<=0)
+        return false;
+      if(this.ispeed && this.ispeed<0)
+        return false;
+      if(this.turn && (this.turn<0 || this.turn>Math.PI))
+        return false;
+      return true;
+    }
     function HyperbolicOrbit(b) {
       this.center=b;
       this.setPerigey=setPerigeyHyperbolic;
@@ -713,6 +757,8 @@
       this.ellipse=Hyperbolic2Ellipse;
       this.parabolic=Hyperbolic2Parabolic;
       this.hyperbolic=Hyperbolic2Hyperbolic;
+      this.clean=cleanHyperbolic;
+      this.check=CheckHyperbolic;
     }
     function selectBody() {
       var b=document.getElementById('cbody').value, n;
@@ -765,31 +811,37 @@
       selectBody();
       selectType(document.getElementById('ortype').value);
     }
+    function showCircle() {
+      document.getElementById('cper').value=orbit.period/document.getElementById('cpunit').value;
+      document.getElementById('cspd').value=orbit.speed/document.getElementById('cspunit').value;
+      document.getElementById('msg').innerHTML=orbit.check()?'':'Недопустимые параметры!';
+    }
     function c_rad(r) {
       r*=document.getElementById('crunit').value;
       orbit.setRadius(r);
-      document.getElementById('cper').value=orbit.period/document.getElementById('cpunit').value;
-      document.getElementById('cspd').value=orbit.speed/document.getElementById('cspunit').value;
+      showCircle();
     }
     function c_per(p) {
       p*=document.getElementById('cpunit').value;
       orbit.setPeriod(p);
-      document.getElementById('crad').value=orbit.radius/document.getElementById('crunit').value;
-      document.getElementById('cspd').value=orbit.speed/document.getElementById('cspunit').value;
+      showCircle();
     }
     function c_sp(s) {
       s*=document.getElementById('cspunit').value;
       orbit.setSpeed(s);
-      document.getElementById('crad').value=orbit.radius/document.getElementById('crunit').value;
-      document.getElementById('cper').value=orbit.period/document.getElementById('cpunit').value;
+      showCircle();
+    }
+    function showParabolic() {
+      document.getElementById('ppsp').value=orbit.pspeed/document.getElementById('ppspunit').value;
+      document.getElementById('msg').innerHTML=orbit.check()?'':'Недопустимые параметры!';
     }
     function p_per(p) {
       orbit.setPerigey(p*document.getElementById('ppunit').value);
-      document.getElementById('ppsp').value=orbit.pspeed/document.getElementById('ppspunit').value;
+      showParabolic();
     }
     function p_psp(s) {
       orbit.setPsp(s*document.getElementById('ppspunit').value);
-      document.getElementById('pper').value=orbit.perigey/document.getElementById('ppunit').value;
+      showParabolic();
     }
     function showEllipse() {
       if(orbit.perigey)
@@ -824,6 +876,7 @@
         document.getElementById('eperiod').value=orbit.period/document.getElementById('etunit').value;
       else
         document.getElementById('eperiod').value='';
+      document.getElementById('msg').innerHTML=orbit.check()?'':'Недопустимые параметры!';
     }
     function e_per(p) {
       orbit.setPerigey(p*document.getElementById('epunit').value);
@@ -882,6 +935,7 @@
         document.getElementById('hd').value=orbit.d/document.getElementById('hdturn').value;
       else
         document.getElementById('hd').value='';
+      document.getElementById('msg').innerHTML=orbit.check()?'':'Недопустимые параметры!';
     }
     function h_per(p) {
       orbit.setPerigey(p*document.getElementById('hpunit').value);
@@ -1148,7 +1202,9 @@
 </select>
 </td></tr>
 </table>
-</form></div>
+</form>
+<p id='msg' color='red'></p>
+</div>
 <div id='tab1' style='display:none'>
 <i>Здесь еще ничего нет...</i>
 Центральное тело:

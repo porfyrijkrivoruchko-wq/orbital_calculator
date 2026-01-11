@@ -441,3 +441,223 @@ bool EllipseOrbit::legal() const {
     return false;
   return true;
 }
+
+ParabolicOrbit::operator CircleOrbit() const {
+  CircleOrbit co(c);
+  if(!isnan(rp))
+    co.setradius(rp);
+  return co;
+}
+
+ParabolicOrbit::operator EllipseOrbit() const {
+  EllipseOrbit e(c);
+  if(!isnan(rp))
+    e.setperigey(rp);
+  return e;
+}
+
+ParabolicOrbit::operator HyperbolicOrbit() const {
+  HyperbolicOrbit h(c);
+  if(!isnan(rp))
+    h.setperigey(rp);
+  if(!isnan(vp))
+    h.setpspeed(vp);
+  return h;
+}
+
+void ParabolicOrbit::setperigey(Real p) {
+  rp=p;
+  vp=sqrt(2*MG/rp);
+}
+
+void ParabolicOrbit::setpspeed(Real s) {
+  vp=s;
+  rp=2*MG/(rp*rp);
+}
+
+bool ParabolicOrbit::legal() const {
+  if(!isnan(rp) && rp<c.radius)
+    return false;
+  return true;
+}
+
+void HyperbolicOrbit::calcde() {
+  rp=d*sqrt((e-1.)/(e+1.));
+  vp=sqrt(MG*(e+1.)/rp);
+  vi=sqrt(MG*(e-1.)/rp);
+}
+
+void HyperbolicOrbit::calcdrp() {
+  e=(d*d+rp*rp)/(d*d-rp*rp);
+  t=2*asin(1./e);
+  vp=sqrt(MG/(e+1.)/rp);
+  vi=sqrt(MG*(e-1.)/rp);
+}
+
+void HyperbolicOrbit::calcdvi() {
+  // Здесь нужно решать кубическое уравнение
+}
+
+void HyperbolicOrbit::calcdvp() {
+  // Здесь нужно решать кубическое уравнение
+}
+
+void HyperbolicOrbit::calcerp() {
+  d=rp*sqrt((e+1.)/(e-1.));
+  vp=sqrt(MG/(e+1.)/rp);
+  vi=sqrt(MG*(e-1.)/rp);
+}
+
+void HyperbolicOrbit::calcevi() {
+  vp=vi*sqrt((e+1.)/(e-1.));
+  rp=2*MG/(vp*vp-vi*vi);
+  d=rp*vp/vi;
+}
+
+void HyperbolicOrbit::calcevp() {
+  vi=vp*sqrt((e-1.)/(e+1.));
+  rp=2*MG/(vp*vp-vi*vi);
+  d=rp*vp/vi;
+}
+
+void HyperbolicOrbit::calcrpvi() {
+  vp=sqrt(vi*vi+2*MG/rp);
+  e=(vp*vp+vi*vi)/(vp*vp-vi*vi);
+  t=2*asin(1./e);
+  d=rp*vp/vi;
+}
+
+void HyperbolicOrbit::calcrpvp() {
+  vi=sqrt(vp*vp-2*MG/rp);
+  e=(vp*vp+vi*vi)/(vp*vp-vi*vi);
+  t=2*asin(1./e);
+  d=rp*vp/vi;
+}
+
+void HyperbolicOrbit::calcvpvi() {
+  rp=2*MG/(vp*vp-vi*vi);
+  e=(vp*vp+vi*vi)/(vp*vp-vi*vi);
+  t=2*asin(1./e);
+  d=rp*vp/vi;
+}
+
+HyperbolicOrbit::operator CircleOrbit() const {
+  CircleOrbit co(c);
+  if(!isnan(rp))
+    co.setradius(rp);
+  else if(!isnan(vp))
+    co.setspeed(vp);
+  else if(!isnan(vi))
+    co.setspeed(vi);
+  return co;
+}
+
+HyperbolicOrbit::operator ParabolicOrbit() const {
+  ParabolicOrbit p(c);
+  if(!isnan(rp))
+    p.setperigey(rp);
+  else if(!isnan(vp))
+    p.setpspeed(vp);
+  else if(!isnan(vi))
+    p.setpspeed(vi);
+  return p;
+}
+
+HyperbolicOrbit::operator EllipseOrbit() const {
+  EllipseOrbit o(c);
+  if(!isnan(rp))
+    o.setperigey(rp);
+  if(!isnan(e))
+    o.setexcentrisitet(e>1.?1./e:e);
+  else if(!isnan(vp))
+    o.setpspeed(vp);
+  return o;
+}
+
+void HyperbolicOrbit::setperigey(Real r) {
+  rp=r;
+  if(!isnan(vp))
+    calcrpvp();
+  else if(!isnan(vi))
+    calcrpvi();
+  else if(!isnan(e))
+    calcerp();
+  else if(!isnan(d))
+    calcdrp();
+}
+
+void HyperbolicOrbit::setpspeed(Real s) {
+  vp=s;
+  if(!isnan(rp))
+    calcrpvp();
+  else if(!isnan(vi))
+    calcvpvi();
+  else if(!isnan(e))
+    calcevp();
+  else if(!isnan(d))
+    calcdvp();
+}
+
+void HyperbolicOrbit::setispeed(Real s) {
+  vi=s;
+  if(!isnan(rp))
+    calcrpvi();
+  else if(!isnan(vp))
+    calcvpvi();
+  else if(!isnan(e))
+    calcevi();
+  else if(!isnan(d))
+    calcdvi();
+}
+
+void HyperbolicOrbit::setturn(Real _t) {
+  t=_t;
+  e=1./sin(t/2.);
+  if(!isnan(rp))
+    calcerp();
+  else if(!isnan(vp))
+    calcevp();
+  else if(!isnan(vi))
+    calcevi();
+  else if(!isnan(d))
+    calcde();
+}
+
+void HyperbolicOrbit::setgoal(Real g) {
+  d=g;
+  if(!isnan(rp))
+    calcdrp();
+  else if(!isnan(vp))
+    calcdvp();
+  else if(!isnan(vi))
+    calcdvi();
+  else if(!isnan(e))
+    calcde();
+}
+
+void HyperbolicOrbit::setexcentrisitet(Real _e) {
+  e=_e;
+  t=2*asin(1./e);
+  if(!isnan(rp))
+    calcerp();
+  else if(!isnan(vp))
+    calcevp();
+  else if(!isnan(vi))
+    calcevi();
+  else if(!isnan(d))
+    calcde();
+}
+
+bool HyperbolicOrbit::legal() const {
+  if(!isnan(rp) && rp<c.radius)
+    return false;
+  if(!isnan(e) && e<1.)
+    return false;
+  if(!isnan(vp) && vp<=0)
+    return false;
+  if(!isnan(vi) && vi<0)
+    return false;
+  if(!isnan(t) && (t<=0 || t>M_PI))
+    return false;
+  return true;
+}
