@@ -1,0 +1,903 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Орбитальный калькулятор v. 0.01</title>
+  <script>
+    var Gamma=6.6743e-11;
+    function SkyBody(n,m,r,p,rn) {
+      this.name=n;
+      this.mass=m;
+      this.radius=r;
+      this.period=p;
+      this.runame=rn;
+      this.MG=m*Gamma;
+    }
+    var bodies=[
+      new SkyBody('sun',1.9885e30,6.96e8,25.38*86400,'Солнце'),
+      new SkyBody('mercury',3.33022e23,2.4397e6,58.646*86400,"Меркурий"),
+      new SkyBody('venus',4.8675e24,6.0518e6,243.023*86400,"Венера"),
+      new SkyBody('earth',5.9726e24,6.371e6,0.99726968*86400,"Земля"),
+      new SkyBody('moon',7.3477e22,1.7371e6,27.321661*86400,"Луна"),
+      new SkyBody('mars',6.4171e23,3.3895e6,24.6229*86400,"Марс"),
+      new SkyBody('yupiter',1.8986e27,69.911e6,9.925*3600,"Юпитер"),
+      new SkyBody('saturn',5.6846e26,58.232e6,10*3600+32*60+45,"Сатурн"),
+      new SkyBody('uran',8.6813e25,25.362e6,0.71833*86400,"Уран"),
+      new SkyBody('neptun',1.02409e26,24.622e6,0.6653*86400,"Нептун"),
+      new SkyBody('pluto',1.303e22,1.1883e6,6.387*86400,"Плутон"),
+      new SkyBody('cerera',9.393e20,463.5e3,9*3600+4*60+27.01,"Церера"),
+      new SkyBody('vesta',2.59076e20,525.4e3/2,5.342*3600,"Веста"),
+      new SkyBody('erida',1.67e22,1.163e6,25.9*3600,"Эрида"),
+      new SkyBody('ganimed',1.4819e23,2.6341e6,7.15455296*86400,"Ганимед"),
+      new SkyBody('europe',4.817e22,1,5608e6,3,551*86400,"Европа"),
+      new SkyBody('titan',1.3e23,5.15e6/2,15.25*86400,"Титан"),
+      new SkyBody('encelad',1.08022e20,252.1e3,118386.82,"Энцелад")
+    ], orbitType= ['circle','ellipse','parabolic','hyperbolic'];
+    function sqr(x) { return x*x; }
+    function cube(x) { return x*x*x; }
+    var sunit=['munit','runit','punit'];
+    var orbit;
+    function setRadiusCircle(r) {
+      this.radius=r;
+      this.speed=Math.sqrt(this.center.MG/this.radius);
+      this.period=2*Math.PI*this.radius/this.speed;
+    }
+    function setPeriodCircle(p) {
+      this.period=p;
+      this.speed=Math.pow(2*Math.PI*this.center.MG/this.period,1./3);
+      this.radius=this.speed*this.period/(2*Math.PI);
+    }
+    function setSpeedCircle(s) {
+      this.speed=s;
+      this.radius=this.center.MG/sqr(this.speed);
+      this.period=2*Math.PI*this.center.MG/cube(this.speed);
+    }
+    function cleanCircle() {
+      this.radius=null;
+      this.speed=null;
+      this.period=null;
+    }
+    function CircleOrbit(b) {
+      this.center=b;
+      this.setRadius=setRadiusCircle;
+      this.setPeriod=setPeriodCircle;
+      this.setSpeed=setSpeedCircle;
+      this.clean=cleanCircle;
+    }
+    function setPerigeyEllipse(p) {
+      this.perigey=p*document.getElementById('epunit').value;
+      if(this.apogey) {
+        this.a=(this.perigey+this.apogey)/2;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.excentrisitet=(this.apogey-this.perigey)/(this.apogey+this.perigey);
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.a) {
+        this.apogey=this.a*2-this.perigey;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.excentrisitet) {
+        this.apogey=this.perigey*(1+this.excentrisitet)/(1-this.excentrisitet);
+        this.a=(this.perigey+this.apogey)/2;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.b) {
+        this.apogey=sqr(this.b)/this.perigey;
+        this.a=(this.apogey+this.perigey)/2;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.pspeed) {
+        this.apogey=sqr(this.perigey)/(2*this.center.MG/sqr(this.pspeed)-this.perigey);
+        this.a=(sqr(this.b)/this.perigey+this.perigey)/2;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.aspeed=this.pspeed*this.perigey/this.apogey;
+      } else if(this.aspeed) {
+        this.apogey=(this.perigey+Math.sqrt(sqr(this.perigey)+8*this.center.MG*this.perigey*sqr(this.aspeed)))/(2*sqr(this.aspeed));
+        this.a=(this.perigey+this.apogey)/2;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.pspeed=this.aspeed*this.apogey/this.perigey;
+      }
+    }
+    function setApogeyEllipse(a) {
+      this.apogey=a;
+      if(this.perigey) {
+        this.a=(this.perigey+this.apogey)/2;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.excentrisitet=(this.apogey-this.perigey)/(this.apogey+this.perigey);
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.a) {
+        this.perigey=2*this.a-this.apogey;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.b) {
+        this.perigey=sqr(b)/this.apogey;
+        this.a=(this.perigey+this.apogey)/2;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.excentrisitet) {
+        this.perigey=this.apogey*(1-this.excentrisitet)/(1+this.excentrisitet);
+        this.a=(this.perigey+this.apogey)/2;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.aspeed) {
+        this.perigey=sqr(this.apogey)/(2*this.center.MG/sqr(this.aspeed)-this.apogey);
+        this.a=(this.perigey+this.apogey)/2;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.pspeed=this.aspeed*this.apogey/this.perigey;
+      } else if(this.pspeed) {
+        this.perigey=(this.apogey+Math.sqrt(sqr(this.apogey)+8*this.center.MG*this.apogey*sqr(this.pspeed)))/(2*sqr(this.pspeed));
+        this.a=(this.perigey+this.apogey)/2;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.aspeed=this.pspeed*this.perigey/this.apogey;
+      }
+    }
+    function setBigSizeEllise(a) {
+      this.a=a;
+      this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+      if(this.b) {
+        this.perigey=this.a-Math.sqrt(sqr(this.a)-sqr(this.b));
+        this.apogey=2*this.a-this.perigey;
+        this.excentrisitet=(this.apogey-this.perigey)/(this.apogey+this.perigey);
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.perigey) {
+        this.apogey=this.a*2-this.perigey;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.apogey) {
+        this.perigey=2*this.a-this.apogey;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.excentrisitet) {
+        this.perigey=this.a*(1-this.excentrisitet);
+        this.apogey=this.a*(1+this.excentrisitet);
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.aspeed) {
+        this.pspeed=this.center.MG/(this.aspeed*this.a);
+        this.perigey=2*this.center.MG/(this.pspeed*(this.pspeed+this.aspeed));
+        this.apogey=2*this.a-this.perigey;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+      } else if(this.pspeed) {
+        this.aspeed=this.center.MG/(this.pspeed*this.a);
+        this.perigey=2*this.center.MG/(this.pspeed*(this.pspeed+this.aspeed));
+        this.apogey=2*this.a-this.perigey;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+      }
+    }
+    function setSmallSizeEllipse(b) {
+      this.b=b;
+      if(this.a) {
+        this.perigey=this.a-Math.sqrt(sqr(this.a)-sqr(this.b));
+        this.apogey=2*this.a-this.perigey;
+        this.excentrisitet=(this.apogey-this.perigey)/(this.apogey+this.perigey);
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.excentrisitet) {
+        this.a=this.b/Math.sqrt(1-sqr(this.excentrisitet));
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.perigey=this.a-Math.sqrt(sqr(this.a)-sqr(this.b));
+        this.apogey=2*this.a-this.perigey;
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.perigey) {
+        this.apogey=sqr(this.b)/this.perigey;
+        this.a=(this.apogey+this.perigey)/2;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.apogey) {
+        this.perigey=sqr(b)/this.apogey;
+        this.a=(this.perigey+this.apogey)/2;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.pspeed) {
+        this.pspeed=null;
+      } else if(this.aspeed) {
+        this.aspeed=null;
+      }
+    }
+    function setExcentrisitetEllipse(e) {
+      this.excentrisitet=e;
+      if(this.a) {
+        this.perigey=this.a*(1-this.excentrisitet);
+        this.apogey=this.a*(1+this.excentrisitet);
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.b) {
+        this.a=this.b/Math.sqrt(1-sqr(this.excentrisitet));
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.perigey=this.a-Math.sqrt(sqr(this.a)-sqr(this.b));
+        this.apogey=2*this.a-this.perigey;
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.perigey) {
+        this.apogey=this.perigey*(1+this.excentrisitet)/(1-this.excentrisitet);
+        this.a=(this.perigey+this.apogey)/2;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.apogey) {
+        this.perigey=this.apogey*(1-this.excentrisitet)/(1+this.excentrisitet);
+        this.a=(this.perigey+this.apogey)/2;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.pspeed) {
+        this.aspeed=this.pspeed*(1-this.excentrisitet)/(1+this.excentrisitet);
+        this.a=this.center.MG/(this.pspeed*this.aspeed);
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.perigey=2*this.a*this.aspeed/(this.pspeed+this.aspeed);
+        this.apogey=2*this.a-this.perigey;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+      } else if(this.aspeed) {
+        this.pspeed=this.aspeed*(1+this.excentrisitet)/(1-this.excentrisitet);
+        this.a=this.center.MG/(this.pspeed*this.aspeed);
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.perigey=2*this.a*this.aspeed/(this.pspeed+this.aspeed);
+        this.apogey=2*this.a-this.perigey;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+      }
+    }
+    function setPspEllipse(s) {
+      this.pspeed=s;
+      if(this.perigey) {
+        this.apogey=sqr(this.perigey)/(2*this.center.MG/sqr(this.pspeed)-this.perigey);
+        this.a=(sqr(this.b)/this.perigey+this.perigey)/2;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.aspeed=this.pspeed*this.perigey/this.apogey;
+      } else if(this.apogey) {
+        this.perigey=(this.apogey+Math.sqrt(sqr(this.apogey)+8*this.center.MG*this.apogey*sqr(this.pspeed)))/(2*sqr(this.pspeed));
+        this.a=(this.perigey+this.apogey)/2;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.aspeed=this.pspeed*this.perigey/this.apogey;
+      } else if(this.a) {
+        this.aspeed=this.center.MG/(this.pspeed*this.a);
+        this.perigey=2*this.center.MG/(this.pspeed*(this.pspeed+this.aspeed));
+        this.apogey=2*this.a-this.perigey;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+      } else if(this.b) {
+        this.b=null;
+      } else if(this.excentrisitet) {
+        this.aspeed=this.pspeed*(1-this.excentrisitet)/(1+this.excentrisitet);
+        this.a=this.center.MG/(this.pspeed*this.aspeed);
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.perigey=2*this.a*this.aspeed/(this.pspeed+this.aspeed);
+        this.apogey=2*this.a-this.perigey;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+      } else if(this.aspeed) {
+        this.a=this.center.MG/(this.pspeed*this.aspeed);
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.excentrisitet=(this.pspeed-this.aspeed)/(this.pspeed+this.aspeed);
+        this.perigey=this.a*(1-this.excentrisitet);
+        this.apogey=this.a*(1+this.excentrisitet);
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+      }
+    }
+    function setAspEllipse(s) {
+      this.aspeed=s;
+      if(this.apogey) {
+        this.perigey=sqr(this.apogey)/(2*this.center.MG/sqr(this.aspeed)-this.apogey);
+        this.a=(this.perigey+this.apogey)/2;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.pspeed=this.aspeed*this.apogey/this.perigey;
+      } else if(this.perigey) {
+        this.apogey=(this.perigey+Math.sqrt(sqr(this.perigey)+8*this.center.MG*this.perigey*sqr(this.aspeed)))/(2*sqr(this.aspeed));
+        this.a=(this.perigey+this.apogey)/2;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.pspeed=this.aspeed*this.apogey/this.perigey;
+      } else if(this.a) {
+        this.pspeed=this.center.MG/(this.aspeed*this.a);
+        this.perigey=2*this.center.MG/(this.pspeed*(this.pspeed+this.aspeed));
+        this.apogey=2*this.a-this.perigey;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+      } else if(this.b) {
+        this.b=null;
+      } else if(this.excentrisitet) {
+        this.pspeed=this.aspeed*(1+this.excentrisitet)/(1-this.excentrisitet);
+        this.a=this.center.MG/(this.pspeed*this.aspeed);
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.perigey=2*this.a*this.aspeed/(this.pspeed+this.aspeed);
+        this.apogey=2*this.a-this.perigey;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+      } else if(this.pspeed) {
+        this.a=this.center.MG/(this.pspeed*this.aspeed);
+        this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
+        this.excentrisitet=(this.pspeed-this.aspeed)/(this.pspeed+this.aspeed);
+        this.perigey=this.a*(1-this.excentrisitet);
+        this.apogey=this.a*(1+this.excentrisitet);
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+      }
+    }
+    function setPeriodEllipse(p) {
+      this.period=p;
+      this.a=Math.pow(this.center.MG,1./3)*Math.pow(this.period/(2*Math.PI),2./3);
+      if(this.b) {
+        this.perigey=this.a-Math.sqrt(sqr(this.a)-sqr(this.b));
+        this.apogey=2*this.a-this.perigey;
+        this.excentrisitet=(this.apogey-this.perigey)/(this.apogey+this.perigey);
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.perigey) {
+        this.apogey=this.a*2-this.perigey;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.apogey) {
+        this.perigey=2*this.a-this.apogey;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.excentrisitet) {
+        this.perigey=this.a*(1-this.excentrisitet);
+        this.apogey=this.a*(1+this.excentrisitet);
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+        this.pspeed=Math.sqrt(orbit.center.MG*orbit.apogey/orbit.a/orbit.perigey);
+        this.aspeed=Math.sqrt(orbit.center.MG*orbit.perigey/orbit.a/orbit.apogey);
+      } else if(this.aspeed) {
+        this.pspeed=this.center.MG/(this.aspeed*this.a);
+        this.perigey=2*this.center.MG/(this.pspeed*(this.pspeed+this.aspeed));
+        this.apogey=2*this.a-this.perigey;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+      } else if(this.pspeed) {
+        this.aspeed=this.center.MG/(this.pspeed*this.a);
+        this.perigey=2*this.center.MG/(this.pspeed*(this.pspeed+this.aspeed));
+        this.apogey=2*this.a-this.perigey;
+        this.excentrisitet=(this.a-this.perigey)/this.a;
+        this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
+      }
+    }
+    function cleanEllipse() {
+      this.perigey=null;
+      this.apogey=null;
+      this.a=null;
+      this.b=null;
+      this.excentrisitet=null;
+      this.period=null;
+      this.pspeed=null;
+      this.aspeed=null;
+    }
+    function EllipseOrbit(b) {
+      this.center=b;
+      this.setPerigey=setPerigeyEllipse;
+      this.setApogey=setApogeyEllipse;
+      this.setBigSize=setBigSizeEllise;
+      this.setSmallSize=setSmallSizeEllipse;
+      this.setExcentrisitet=setExcentrisitetEllipse;
+      this.setPsp=setPspEllipse;
+      this.setAsp=setAspEllipse;
+      this.clean=cleanEllipse;
+    }
+    function setPerigeyParabolic(p) {
+      this.perigey=p;
+      this.pspeed=Math.sqrt(2*this.center.MG/this.perigey);
+    }
+    function setPspParabolic(s) {
+      this.pspeed=s;
+      this.perigey=2*this.center.MG/(this.perigey*this.perigey);
+    }
+    function cleanParabolic() {
+      this.perigey=null;
+      this.pspeed=null;
+    }
+    function ParabolicOrbit(b) {
+      this.center=b;
+      this.setPerigey=setPerigeyParabolic;
+      this.setPsp=setPspParabolic;
+      this.clean=cleanParabolic;
+    }
+    function setPerigeyHyperbolic(p) {
+      this.perigey=p;
+      if(this.pspeed) {
+      } else if(this.ispeed) {
+      } else if(this.turn) {
+      }
+    }
+    function setPspHyperbolic(s) {
+      this.pspeed=s;
+      if(this.perigey) {
+      } else if(this.ispeed) {
+      } else if(this.turn) {
+      }
+    }
+    function setIspHyperbolic(s) {
+      this.ispeed=s;
+      if(this.perigey) {
+      } else if(this.pspeed) {
+      } else if(this.turn) {
+      }
+    }
+    function setTurnHyperbolic(a) {
+      this.turn=a;
+      this.excentrisitet=1./Math.sin(this.turn/2);
+      if(this.perigey) {
+      } else if(this.pspeed) {
+      } else if(this.ispeed) {
+      }
+    }
+    function setExcentrisitetHyperbolic(e) {
+      this.excentrisitet=e;
+      this.turn=2*Math.asin(1./this.excentrisitet);
+      if(this.perigey) {
+      } else if(this.pspeed) {
+      } else if(this.ispeed) {
+      }
+    }
+    function cleanHyperbolic() {
+      this.perigey=null;
+      this.pspeed=null;
+      this.ispeed=null;
+      this.turn=null;
+      this.excentrisitet=null;
+    }
+    function HyperbolicOrbit(b) {
+      this.center=b;
+      this.setPerigey=setPerigeyHyperbolic;
+      this.setPsp=setPspHyperbolic;
+      this.setIsp=setIspHyperbolic;
+      this.setTurn=setTurnHyperbolic;
+      this.setExctntrisitet=setExcentrisitetHyperbolic;
+    }
+    function selectBody() {
+      var b=document.getElementById('cbody').value, n;
+      for(n=0; n<bodies.length; n++)
+        if(b==bodies[n].name) break;
+      if(n==bodies.length) return false;
+      curbody=bodies[n];
+      if(orbit) {
+        orbit.center=curbody;
+        orbit.clean();
+      }
+      var t=document.getElementById('propetyes');
+      t.rows[0].cells[1].innerHTML=curbody.mass/document.getElementById('munit').value;
+      t.rows[1].cells[1].innerHTML=curbody.radius/document.getElementById('runit').value;
+      t.rows[2].cells[1].innerHTML=curbody.period/document.getElementById('punit').value;
+      return true;
+    }
+    function selectType(t) {
+      var i;
+      for(i=0; i<orbitType.length; i++)
+        document.getElementById(orbitType[i]).style.display=(orbitType[i]==t)?'':'none';
+      switch(t) {
+        case 'circle':
+          if(curbody)
+            orbit=new CircleOrbit(curbody);
+          break;
+        case 'ellipse':
+          if(curbody)
+            orbit=new EllipseOrbit(curbody);
+          break;
+        case 'hyperbolic':
+          if(curbody)
+            orbit=new HyperbolicOrbit(curbody);
+          break;
+        case 'parabolic':
+          if(curbody)
+            orbit=new ParabolicOrbit(curbody);
+          break;
+      }
+    }
+    function initial() {
+      selectBody();
+      selectType(document.getElementById('ortype').value);
+    }
+    function c_rad(r) {
+      r*=document.getElementById('crunit').value;
+      orbit.setRadius(r);
+      document.getElementById('cper').value=orbit.period/document.getElementById('cpunit').value;
+      document.getElementById('cspd').value=orbit.speed/document.getElementById('cspunit').value;
+    }
+    function c_per(p) {
+      p*=document.getElementById('cpunit').value;
+      orbit.setPeriod(p);
+      document.getElementById('crad').value=orbit.radius/document.getElementById('crunit').value;
+      document.getElementById('cspd').value=orbit.speed/document.getElementById('cspunit').value;
+    }
+    function c_sp(s) {
+      s*=document.getElementById('cspunit').value;
+      orbit.setSpeed(s);
+      document.getElementById('crad').value=orbit.radius/document.getElementById('crunit').value;
+      document.getElementById('cper').value=orbit.period/document.getElementById('cpunit').value;
+    }
+    function p_per(p) {
+      orbit.setPerigey(p*document.getElementById('ppunit').value);
+      document.getElementById('ppsp').value=orbit.pspeed/document.getElementById('ppspunit').value;
+    }
+    function p_psp(s) {
+      orbit.setPsp(s*document.getElementById('ppspunit').value);
+      document.getElementById('pper').value=orbit.perigey/document.getElementById('ppunit').value;
+    }
+    function showEllipse() {
+      if(orbit.perigey)
+        document.getElementById('eper').value=orbit.perigey/document.getElementById('epunit').value;
+      else
+        document.getElementById('eper').value='';
+      if(orbit.apogey)
+        document.getElementById('eapo').value=orbit.apogey/document.getElementById('eaunit').value;
+      else
+        document.getElementById('eapo').value='';
+      if(orbit.a)
+        document.getElementById('ehalf').value=orbit.a/document.getElementById('ehunit').value;
+      else
+        document.getElementById('ehalf').value='';
+      if(orbit.b)
+        document.getElementById('esmall').value=orbit.b/document.getElementById('esmunit').value;
+      else
+        document.getElementById('esmall').value='';
+      if(orbit.excentrisitet)
+        document.getElementById('eexc').value=orbit.excentrisitet;
+      else
+        document.getElementById('eexc').value='';
+      if(orbit.pspeed)
+        document.getElementById('epsp').value=orbit.pspeed/document.getElementById('epspunit').value;
+      else
+        document.getElementById('epsp').value='';
+      if(orbit.aspeed)
+        document.getElementById('easp').value=orbit.aspeed/document.getElementById('easpunit').value;
+      else
+        document.getElementById('easp').value='';
+      if(orbit.period)
+        document.getElementById('eperiod').value=orbit.period/document.getElementById('etunit').value;
+      else
+        document.getElementById('eperiod').value='';
+    }
+    function e_per(p) {
+      orbit.setPerigey(p*document.getElementById('epunit').value);
+      showEllipse();
+    }
+    function e_apo(a) {
+      orbit.setApogey(a*document.getElementById('eaunit').value);
+      showEllipse();
+    }
+    function e_half(a) {
+      orbit.setBigSize(a*document.getElementById('ehunit').value);
+      showEllipse();
+    }
+    function e_small(b) {
+      orbit.setSmallSize(b*document.getElementById('esmunit').value);
+      showEllipse();
+    }
+    function e_exc(e) {
+      orbit.setExcentrisitetEllipse(e);
+      showEllipse();
+    }
+    function e_psp(s) {
+      orbit.setPsp(s*document.getElementById('epspunit').value);
+      showEllipse();
+    }
+    function e_asp(s) {
+      orbit.setAsp(s*document.getElementById('easpunit').value);
+      showEllipse();
+    }
+    function e_period(t) {
+      orbit.setPeriod(t*document.getElementById('etunit').value);
+      showEllipse();
+    }
+    function showHyperbolic() {
+      if(orbit.perigey)
+        document.getElementById('hper').value=orbit.perigey/document.getElementById('hpunit').value;
+      else
+        document.getElementById('hper').value='';
+      if(orbit.pspeed)
+        document.getElementById('hpsp').value=orbit.pspeed/document.getElementById('hpsunit').value;
+      else
+        document.getElementById('hpsp').value='';
+      if(orbit.ispeed)
+        document.getElementById('hisp').value=orbit.ispeed/document.getElementById('hisunit').value;
+      else
+        document.getElementById('hisp').value='';
+      if(orbit.turn)
+        document.getElementById('hturn').value=orbit.turn/document.getElementById('htunit').value;
+      else
+        document.getElementById('hturn').value='';
+      if(orbit.excentrisitet)
+        document.getElementById('hexc').value=orbit.excentrisitet;
+      else
+        document.getElementById('hexc').value='';
+    }
+    function h_per(p) {
+      orbit.setPerigey(p*document.getElementById('hpunit').value);
+      showHyperbolic();
+    }
+    function h_psp(s) {
+      orbit.setPsp(s*document.getElementById('hpsunit').value);
+      showHyperbolic();
+    }
+    function h_isp(s) {
+      orbit.setIsp(s*document.getElementById('hisunit').value);
+      showHyperbolic();
+    }
+    function h_turn(a) {
+      orbit.setTurn(a*document.getElementById('htunit').value);
+      showHyperbolic();
+    }
+    function h_exc(e) {
+      orbit.setExcentrisitet(e);
+      showHyperbolic();
+    }
+    function chooseTab(n) {
+      var m=document.getElementById('mainmenu'), i;
+      for(i=0; i<m.rows[0].cells.length; ++i)
+        if(i==n) {
+          m.rows[0].cells[i].bgColor='lightblue';
+          m.rows[0].cells[i].style.fontWeight='bold';
+          document.getElementById('tab'+i).style.display='';
+        }
+        else {
+          m.rows[0].cells[i].bgColor='lightgray';
+          m.rows[0].cells[i].style.fontWeight='normal';
+          document.getElementById('tab'+i).style.display='none';
+        }
+    }
+  </script>
+</head>
+<body onload='initial();'>
+<table id='mainmenu' width='100%'>
+<tr><td bgcolor="lightblue" style='font-weight:bold' onclick='chooseTab(0);'>Параметры орбит</td><td bgcolor="lightgray" onclick='chooseTab(1);'>Орбитальные маневры</td><td bgcolor="lightgray" onclick='chooseTab(2);'>Межпланетные перелеты</td><td bgcolor="lightgray" onclick='chooseTab(3);'>Взлет и посадка</td>
+</tr>
+</table>
+<div id='tab0'>
+<form onsubmit='return false;' id='parmorbit'>
+Центральное тело:
+<select id='cbody' onchange='selectBody();'>
+<!--
+<script>
+  for(i=0; i<bodies.length; ++i) {
+    document.print("<option value='"+bodies[i].name+"'>"+bodies.runame+"</option>\n");
+  }
+  document.getElementById('cbody').value='earth';
+</script>
+-->
+<option value='sun'>Солнце</option>
+<option value='mercury'>Меркурий</option>
+<option value='venus'>Венера</option>
+<option value='earth' selected>Земля</option>
+<option value='moon'>Луна</option>
+<option value='mars'>Марс</option>
+<option value='yupiter'>Юпитер</option>
+<option value='saturn'>Сатурн</option>
+<option value='uran'>Уран</option>
+<option value='neptun'>Нептун</option>
+<option value='pluto'>Плутон</option>
+<option value='cerera'>Церера</option>
+<option value='vesta'>Веста</option>
+<option value='ganimed'>Ганимед</option>
+<option value='europe'>Европа</option>
+<option value='titan'>Титан</option>
+</select><br>
+<table id='propetyes'>
+<tr><td>Масса</td><td></td><td>
+<select id='munit' onchange='selectBody();'>
+<option value='0.001'>г</option>
+<option value='1' selected>кг</option>
+<option value='1000'>т</option>
+<option value='1e9'>млн.т.</option>
+</select>
+</td></tr>
+<tr><td>Радиус</td><td></td><td>
+<select id='runit' onchange='selectBody();'>
+<option value='0.01'>см</option>
+<option value='1'>м</option>
+<option value='1000' selected>км</option>
+<option value='1e6'>тыс.км</option>
+<option value='1e9'>млн.км</option>
+</select>
+</td></tr>
+<tr><td>Период вращ.</td><td></td><td>
+<select id='punit' onchange='selectBody();'>
+<option value='1'>с</option>
+<option value='60'>мин</option>
+<option value='3600' selected>ч</option>
+<option value='86400'>сут</option>
+<option value='31556736'>лет</option>
+</select>
+</td></tr>
+</table>
+Тип орбиты:
+<select id='ortype' onchange='selectType(this.value);'>
+<option value='circle'>Круговая</option>
+<option value='ellipse'>Эллиптическая</option>
+<option value='parabolic'>Параболическая</option>
+<option value='hyperbolic'>Гиперболическая</option>
+</select>
+</form>
+<form id='circle'>
+<table>
+<tr><td>Радиус</td><td><input type='text' id='crad' onchange='c_rad(this.value);'></td><td>
+<select id='crunit' onchange="if(orbit.radius) document.getElementById('crad').value=orbit.radius/this.value;">
+<option value='0.01'>см</option>
+<option value='1'>м</option>
+<option value='1000' selected>км</option>
+<option value='1e6'>тыс.км</option>
+<option value='1e9'>млн.км</option>
+</select>
+</td></tr>
+<tr><td>Период</td><td><input type='text' id='cper' onchange='c_per(this.value);'></td><td>
+<select id='cpunit' onchange="if(orbit.period) document.getElementById('cper').value=orbit.period/this.value;">
+<option value='1'>с</option>
+<option value='60' selected>мин</option>
+<option value='3600'>ч</option>
+<option value='86400'>сут</option>
+<option value='31556736'>лет</option>
+</select>
+</td></tr>
+<tr><td>Скорость</td><td><input type='text' id='cspd' onchange='c_sp(this.value);'></td><td>
+<select id='cspunit' onchange="if(orbit.speed) document.getElementById('cspd').value=orbit.speed/this.value;">
+<option value='1'>м/с</option>
+<option value='1000' selected>км/с</option>
+<option value='0.27777778'>км/ч</option>
+</select>
+</td></tr>
+</table>
+</form>
+<form id='ellipse' style='display:none'>
+<table>
+<tr><td>Перигей</td><td><input type='text' id='eper' onchange='e_per(this.value);'></td><td>
+<select id='epunit' onchange="if(orbit.perigey) document.getElementById('eper').value=orbit.perigey/this.value;">
+<option value='0.01'>см</option>
+<option value='1'>м</option>
+<option value='1000' selected>км</option>
+<option value='1e6'>тыс.км</option>
+<option value='1e9'>млн.км</option>
+</select>
+</td></tr>
+<tr><td>Апогей</td><td><input type='text' id='eapo' onchange='e_apo(this.value);'></td><td>
+<select id='eaunit' onchange="if(orbit.apogey) document.getElementById('eapo').value=orbit.apogey/this.value;">
+<option value='0.01'>см</option>
+<option value='1'>м</option>
+<option value='1000' selected>км</option>
+<option value='1e6'>тыс.км</option>
+<option value='1e9'>млн.км</option>
+</select>
+</td></tr>
+<tr><td>Большая полуось</td><td><input type='text' id='ehalf' onchange='e_half(this.vale);'></td><td>
+<select id='ehunit' onchange="if(orbit.a) document.getElementById('ehalf').value=orbit.a/this.value;">
+<option value='0.01'>см</option>
+<option value='1' selected>м</option>
+<option value='1000'>км</option>
+<option value='1e6'>тыс.км</option>
+<option value='1e9'>млн.км</option>
+</select>
+</td><tr>
+<tr><td>Малая полуось</td><td><input type='text' id='esmall' onchange='e_small(this.value);'></td><td>
+<select id='esmunit' onchange="if(orbit.b) document.getElementById('esmall').value=orbit.b/this.value;">
+<option value='0.01'>см</option>
+<option value='1' selected>м</option>
+<option value='1000'>км</option>
+<option value='1e6'>тыс.км</option>
+<option value='1e9'>млн.км</option>
+</select>
+</td></tr>
+<tr><td>Эксцентриситет</td><td><input type='text' id='eexc' onchange='e_exc(this.value);'></td><td></td></tr>
+<tr><td>Скорость в перигее</td><td><input type='text' id='epsp' onchange='e_psp(this.value);'></td><td>
+<select id='epspunit' onchange="if(orbit.pspeed) document.getElementById('epsp').value=orbit.pspeed/this.value;">
+<option value='1'>м/с</option>
+<option value='1000' selected>км/с</option>
+<option value='0.27777778'>км/ч</option>
+</select>
+</td></tr>
+<tr><td>Скорость в апогее</td><td><input type='text' id='easp' onchange='e_asp(this.value);'></td><td>
+<select id='easpunit' onchange="if(orbit.aspeed) document.getElementById('easp').value=orbit.aspeed/this.value;">
+<option value='1'>м/с</option>
+<option value='1000' selected>км/с</option>
+<option value='0.27777778'>км/ч</option>
+</select>
+</td></tr>
+<tr><td>Период</td><td><input type='text' id='eperiod' onchange='e_period(this.value);'></td><td>
+<select id='etunit' onchange="if(orbit.period) document.getElementById('eperiod').value=orbit.period/this.value;">
+<option value='1'>с</option>
+<option value='60' selected>мин</option>
+<option value='3600'>ч</option>
+<option value='86400'>сут</option>
+<option value='31556736'>лет</option>
+</select>
+</td></tr>
+</table>
+</form>
+<form id='parabolic' style='display:none'>
+<table>
+<tr><td>Перигей</td><td><input type='text' id='pper' onchange='p_per(this.value);'></td><td>
+<select id='ppunit' onchange="if(orbit.perigey) document.getElementById('pper').value=orbit.perigey/this.value;">
+<option value='0.01'>см</option>
+<option value='1' selected>м</option>
+<option value='1000'>км</option>
+<option value='1e6'>тыс.км</option>
+<option value='1e9'>млн.км</option>
+</select>
+</td></tr>
+<tr><td>Скорость в перигее</td><td><input type='text' id='ppsp' onchange='p_psp(this.value);'></td><td>
+<select id='ppspunit' onchange="if(orbit.pspeed) document.getElementById('ppsp').value=orbit.pspeed/this.value;">
+<option value='1'>м/с</option>
+<option value='1000' selected>км/с</option>
+<option value='0.27777778'>км/ч</option>
+</select>
+</td></tr>
+</table>
+</form>
+<form id='hyperbolic' style='display:none'>
+<table>
+<tr><td>Перигей</td><td><input type='text' id='hper'></td><td>
+<select id='hpunit'>
+<option value='0.01'>см</option>
+<option value='1' selected>м</option>
+<option value='1000'>км</option>
+<option value='1e6'>тыс.км</option>
+<option value='1e9'>млн.км</option>
+</select>
+</td></tr>
+<tr><td>Скорость в перигее</td><td><input type='text' id='hpsp'></td><td>
+<select id='hpsunit'>
+<option value='1'>м/с</option>
+<option value='1000' selected>км/с</option>
+<option value='0.27777778'>км/ч</option>
+</select>
+</td></tr>
+<tr><td>Скорость на беск.</td><td><input type='text' id='hisp'></td><td>
+<select id='hisunit'>
+<option value='1'>м/с</option>
+<option value='1000' selected>км/с</option>
+<option value='0.27777778'>км/ч</option>
+</select>
+</td></tr>
+<tr><td>Угол поворота</td><td><input type='text' id='hturn'></td><td>
+<select id='htunit'>
+<option value='0.174532952'>град</option>
+<option value='1'>рад</option>
+</select>
+</td></tr>
+<tr><td>Эксцентриситет</td><td><input type='text' id='hexc'></td><td></td></tr>
+</table>
+</form></div>
+<div id='tab1' style='display:none'>
+Здесь еще ничего нет...
+</div>
+<div id='tab2' style='display:none'>
+Здесь еще ничего нет...
+</div>
+<div id='tab3' style='display:none'>
+Здесь еще ничего нет...
+</div>
+</body>
+</html>
