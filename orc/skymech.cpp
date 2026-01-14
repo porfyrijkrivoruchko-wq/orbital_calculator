@@ -1,6 +1,16 @@
 #include <ctype.h>
 #include <string.h>
+#include <vector>
 #include "skymech.hpp"
+
+Real cubicsolve(Real p, Real q) {
+  Real d=p*p*p/27+q*q/4;
+  if(d>0) {
+    d=sqrt(d);
+    return cbrt(d-q/2)-cbrt(d+q/2);
+  } else
+    return NAN;
+}
 
 Real Unit::operator()(std::string v) const {
   char* tail;
@@ -264,11 +274,21 @@ void EllipseOrbit::calcbe() {
 }
 
 void EllipseOrbit::calcbva() {
-  // Здесь нужно решать кубическое уравнение
+  ra=cubicsolve(b*b,-2*MG*(b*b)/(va*va));
+  rp=ra*ra/(2*MG/(va*va)-ra);
+  a=(rp+ra)/2;
+  t=M_2_PI*a*sqrt(a/MG);
+  e=(a-rp)/a;
+  vp=va*ra/rp;
 }
 
 void EllipseOrbit::calcbvp() {
-  // Здесь нужно решать кубическое уравнение
+  rp=cubicsolve(b*b,-2*MG*(b*b)/(vp*vp));
+  ra=rp*rp/(2*MG/(vp*vp)-rp);
+  a=(rp+ra)/2;
+  t=M_2_PI*a*sqrt(a/MG);
+  e=(a-rp)/a;
+  va=vp*rp/ra;
 }
 
 void EllipseOrbit::calceva() {
@@ -495,11 +515,23 @@ void HyperbolicOrbit::calcdrp() {
 }
 
 void HyperbolicOrbit::calcdvi() {
-  // Здесь нужно решать кубическое уравнение
+  Real f=MG/(vi*d);
+  vp=f+hypot(f,vi);
+  rp=2*MG/(vp*vp-vi*vi);
+  e=(vp*vp+vi*vi)/(vp*vp-vi*vi);
+  t=2*asin(1./e);
 }
 
 void HyperbolicOrbit::calcdvp() {
   // Здесь нужно решать кубическое уравнение
+  vi=cubicsolve(-vp*vp,2*MG*vp/d);
+  if(isnan(vi)) // Если более одного корня, оставляем значения неопределенными
+    d=NAN;
+  else {
+    rp=2*MG/(vp*vp-vi*vi);
+    e=(vp*vp+vi*vi)/(vp*vp-vi*vi);
+    t=2*asin(1./e);
+  }
 }
 
 void HyperbolicOrbit::calcerp() {
@@ -660,4 +692,92 @@ bool HyperbolicOrbit::legal() const {
   if(!isnan(t) && (t<=0 || t>M_PI))
     return false;
   return true;
+}
+
+std::vector<Skybody> lstbodies;
+std::map<std::string, Skybody*> skybodies;
+Unit massunit, sizeunit, timeunit, speedunit, angleunit;
+
+class Initial {
+public:
+  Initial();
+} initial;
+
+Initial::Initial() {
+  char *path;
+  {
+    char *p=strrchr(program_invocation_name,'/');
+    if(p) path=strndup(program_invocation_name,p-program_invocation_name+1);
+    else path=strdup("");
+  }
+  size_t size=0;
+  char* line=NULL;
+  FILE* f;
+  {
+    char funit[strlen(path)+10];
+    strcat(strcpy(funit,path),"units.txt");
+    f=fopen(funit,"r");
+  }
+  if(!f) perror("Не могу найти файл units.txt");
+  Unit* cu=NULL;
+  while(getline(&line,&size,f)>0) {
+    if(strcasestr(line,"[mass]")) {
+      cu=&massunit;
+      continue;
+    }
+    if(strcasestr(line,"[distance]")) {
+      cu=&sizeunit;
+      continue;
+    }
+    if(strcasestr(line,"[time]")) {
+      cu=&timeunit;
+      continue;
+    }
+    if(strcasestr(line,"[speed]")) {
+      cu=&speedunit;
+      continue;
+    }
+    if(strcasestr(line,"[angle]")) {
+      cu=&angleunit;
+      continue;
+    }
+    if(!cu) continue;
+    char* p=strtok(line," \t\n");
+    if(!p) continue;
+    Real v=atof(p);
+    p=strtok(NULL,"\t\n");
+    if(!p) continue;
+    cu->add(p,v);
+  }
+  fclose(f);
+  {
+    char fbodies[strlen(path)+14];
+    strcat(strcpy(fbodies,path),"skybodies.txt");
+    f=fopen(fbodies,"r");
+  }
+  if(!f) perror("Не могу найти файл skybodies.txt");
+  while(getline(&line,&size,f)>0) {
+    Skybody b;
+    char* p=strtok(line,",\n");
+    if(!p) continue;
+    b.enname=p;
+    p=strtok(NULL,",\n");
+    if(!p) continue;
+    b.runame=p;
+    p=strtok(NULL,",\n");
+    if(!p) continue;
+    b.mass=massunit(p);
+    p=strtok(NULL,",\n");
+    if(!p) continue;
+    b.radius=sizeunit(p);
+    p=strtok(NULL,",\n");
+    if(!p) continue;
+    b.period=timeunit(p);
+    lstbodies.push_back(b);
+  }
+  fclose(f);
+  for(auto i=lstbodies.begin(); i!=lstbodies.end(); ++i) {
+    skybodies[(*i).enname]=&*i;
+    skybodies[(*i).runame]=&*i;
+  }
 }

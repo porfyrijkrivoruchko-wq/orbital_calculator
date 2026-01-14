@@ -17,7 +17,7 @@ struct Skybody {
 class Unit {
   std::map<std::string, Real> vlst;
 public:
-  Unit();
+  Unit() {}
   void add(std::string n, Real v) {
     vlst.insert(std::pair<std::string,Real>{n,v});
   }
@@ -171,5 +171,8 @@ public:
   void setexcentrisitet(Real);
   void setgoal(Real);
 };
+
+extern std::map<std::string, Skybody*> skybodies;
+extern Unit massunit, sizeunit, timeunit, speedunit, angleunit;
 
 #endif
