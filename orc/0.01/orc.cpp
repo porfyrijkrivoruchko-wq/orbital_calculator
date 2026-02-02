@@ -20,101 +20,101 @@ std::map<std::string,Unit*> parms{
 };
 
 std::ostream& operator<<(std::ostream& out, const CircleOrbit& c) {
-  if(!isnan(c.radius().value())) {
-    out << "height=" << (c.radius()-c.center().radius).value() << " м\n";
-    out << "radius=" << c.radius().value() << " м\n";
+  if(!isnan(c.radius())) {
+    out << "height=" << c.radius()-c.center().radius << " м\n";
+    out << "radius=" << c.radius() << " м\n";
   }
   else
     out << "radius undefined\n";
-  if(!isnan(c.speed().value()))
-    out << "speed=" << c.speed().value() << " м/с\n";
+  if(!isnan(c.speed()))
+    out << "speed=" << c.speed() << " м/с\n";
   else
     out << "speed undefined\n";
-  if(!isnan(c.period().value()))
-    out << "period=" << c.period().value() << " c\n";
+  if(!isnan(c.period()))
+    out << "period=" << c.period() << " c\n";
   else
     out << "period undefined\n";
   return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const EllipseOrbit& e) {
-  if(!isnan(e.perigey().value()))
-    out << "perigey=" << (e.perigey()-e.center().radius).value() << " м\n";
+  if(!isnan(e.perigey()))
+    out << "perigey=" << e.perigey()-e.center().radius << " м\n";
   else
     out << "perigey undefined\n";
-  if(!isnan(e.apogey().value()))
-    out << "apogey=" << (e.apogey()-e.center().radius).value() << " м\n";
+  if(!isnan(e.apogey()))
+    out << "apogey=" << e.apogey()-e.center().radius << " м\n";
   else
     out << "apogey undefined\n";
-  if(!isnan(e.bigsize().value()))
-    out << "big size=" << e.bigsize().value() << " м\n";
+  if(!isnan(e.bigsize()))
+    out << "big size=" << e.bigsize() << " м\n";
   else
     out << "big size undefined\n";
-  if(!isnan(e.smallsize().value()))
-    out << "small size=" << e.smallsize().value() << " м\n";
+  if(!isnan(e.smallsize()))
+    out << "small size=" << e.smallsize() << " м\n";
   else
     out << "small size undefined\n";
   if(!isnan(e.excentrisitet()))
     out << "excentrisitet=" << e.excentrisitet() << '\n';
   else
     out << "excentrisitet undefined\n";
-  if(!isnan(e.period().value()))
-    out << "period=" << e.period().value() << " c\n";
+  if(!isnan(e.period()))
+    out << "period=" << e.period() << " c\n";
   else
     out << "period undefined\n";
-  if(!isnan(e.pspeed().value()))
-    out << "speed in perigey=" << e.pspeed().value() << " м/с\n";
+  if(!isnan(e.pspeed()))
+    out << "speed in perigey=" << e.pspeed() << " м/с\n";
   else
     out << "speed in perigey undefined\n";
-  if(!isnan(e.aspeed().value()))
-    out << "speed in apogey=" << e.aspeed().value() << " м/с\n";
+  if(!isnan(e.aspeed()))
+    out << "speed in apogey=" << e.aspeed() << " м/с\n";
   else
     out << "speed in apogey undefined\n";
   return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const ParabolicOrbit& p) {
-  if(!isnan(p.perigey().value()))
-    out << "perigey=" << (p.perigey()-p.center().radius).value() << " м\n";
+  if(!isnan(p.perigey()))
+    out << "perigey=" << p.perigey()-p.center().radius << " м\n";
   else
     out << "perigey undefined\n";
-  if(!isnan(p.pspeed().value()))
-    out << "speed in perigey=" << p.pspeed().value() << " м/с\n";
+  if(!isnan(p.pspeed()))
+    out << "speed in perigey=" << p.pspeed() << " м/с\n";
   else
     out << "speed in perigey undefined\n";
   return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const HyperbolicOrbit& h) {
-  if(!isnan(h.perigey().value()))
-    out << "perigey=" << (h.perigey()-h.center().radius).value() << " м\n";
+  if(!isnan(h.perigey()))
+    out << "perigey=" << h.perigey()-h.center().radius << " м\n";
   else
     out << "perigey undefined\n";
   if(!isnan(h.excentrisitet()))
     out << "excentrisitet=" << h.excentrisitet() << '\n';
   else
     out << "excentrisitet undefined\n";
-  if(!isnan(h.pspeed().value()))
-    out << "speed in perigey=" << h.pspeed().value() << " м/с\n";
+  if(!isnan(h.pspeed()))
+    out << "speed in perigey=" << h.pspeed() << " м/с\n";
   else
     out << "speed in perigey undefined\n";
-  if(!isnan(h.ispeed().value()))
-    out << "speed in infinity=" << h.ispeed().value() << " м/с\n";
+  if(!isnan(h.ispeed()))
+    out << "speed in infinity=" << h.ispeed() << " м/с\n";
   else
     out << "speed in infinity undefined\n";
   if(!isnan(h.turn()))
     out << "turn=" << h.turn() << " рад\n";
   else
     out << "turn undefined\n";
-  if(!isnan(h.goal().value()))
-    out << "goal=" << h.goal().value() << " м\n";
+  if(!isnan(h.goal()))
+    out << "goal=" << h.goal() << " м\n";
   else
     out << "goal undefined\n";
   return out;
 }
 
 void help() {
-  std::cout << "Орбитальный калькулятор версия 0.02\n"
+  std::cout << "Орбитальный калькулятор версия 0.01\n"
   "Использование: " << program_invocation_short_name << 
   " [body] [-c|e|p|h] [parm=value[unit] ...] [--help]\n"
   "body\tНебесное тело - центр орбиты\n"
@@ -178,13 +178,13 @@ int main(int argc, const char* argv[]) {
       CircleOrbit orbit(*body);
       for(auto i=lp.begin(); i!=lp.end(); i++)
         if((*i).first=="radius")
-          orbit.setradius(distance_value<Real>((*i).second));
+          orbit.setradius((*i).second);
         else if((*i).first=="height")
-          orbit.setradius(distance_value<Real>((*i).second)+orbit.center().radius);
+          orbit.setradius((*i).second+orbit.center().radius);
         else if((*i).first=="period")
-          orbit.setperiod(time_value<Real>((*i).second));
+          orbit.setperiod((*i).second);
         else if((*i).first=="speed")
-          orbit.setspeed(speed_value<Real>((*i).second));
+          orbit.setspeed((*i).second);
       std::cout << orbit << '\n';
       break;
     }
@@ -192,21 +192,21 @@ int main(int argc, const char* argv[]) {
       EllipseOrbit orbit(*body);
       for(auto i=lp.begin(); i!=lp.end(); ++i)
         if((*i).first=="perigey")
-          orbit.setperigey(distance_value<Real>((*i).second)+orbit.center().radius);
+          orbit.setperigey((*i).second+orbit.center().radius);
         else if((*i).first=="apogey")
-          orbit.setapogey(distance_value<Real>((*i).second)+orbit.center().radius);
+          orbit.setapogey((*i).second+orbit.center().radius);
         else if((*i).first=="bigsize")
-          orbit.setbigsize(distance_value<Real>((*i).second));
+          orbit.setbigsize((*i).second);
         else if((*i).first=="smallsize")
-          orbit.setsmallsize(distance_value<Real>((*i).second));
+          orbit.setbigsize((*i).second);
         else if((*i).first=="excentrisitet")
           orbit.setexcentrisitet((*i).second);
         else if((*i).first=="period")
-          orbit.setperiod(time_value<Real>((*i).second));
+          orbit.setperiod((*i).second);
         else if((*i).first=="pspeed")
-          orbit.setpspeed(speed_value<Real>((*i).second));
+          orbit.setpspeed((*i).second);
         else if((*i).first=="aspeed")
-          orbit.setaspeed(speed_value<Real>((*i).second));
+          orbit.setaspeed((*i).second);
       std::cout << orbit << '\n';
       break;
     }
@@ -214,9 +214,9 @@ int main(int argc, const char* argv[]) {
       ParabolicOrbit orbit(*body);
       for(auto i=lp.begin(); i!=lp.end(); ++i)
         if((*i).first=="perigey")
-          orbit.setperigey(distance_value<Real>((*i).second)+orbit.center().radius);
+          orbit.setperigey((*i).second+orbit.center().radius);
         else if((*i).first=="pspeed")
-          orbit.setpspeed(speed_value<Real>((*i).second));
+          orbit.setpspeed((*i).second);
       std::cout << orbit << '\n';
       break;
     }
@@ -224,17 +224,17 @@ int main(int argc, const char* argv[]) {
       HyperbolicOrbit orbit(*body);
       for(auto i=lp.begin(); i!=lp.end(); ++i)
         if((*i).first=="perigey")
-          orbit.setperigey(distance_value<Real>((*i).second)+orbit.center().radius);
+          orbit.setperigey((*i).second+orbit.center().radius);
         else if((*i).first=="pspeed")
-          orbit.setpspeed(speed_value<Real>((*i).second));
+          orbit.setpspeed((*i).second);
         else if((*i).first=="ispeed")
-          orbit.setispeed(speed_value<Real>((*i).second));
+          orbit.setispeed((*i).second);
         else if((*i).first=="excentrisitet")
           orbit.setexcentrisitet((*i).second);
         else if((*i).first=="turn")
           orbit.setturn((*i).second);
         else if((*i).first=="goal")
-          orbit.setgoal(distance_value<Real>((*i).second));
+          orbit.setgoal((*i).second);
       std::cout << orbit << '\n';
       break;
     }

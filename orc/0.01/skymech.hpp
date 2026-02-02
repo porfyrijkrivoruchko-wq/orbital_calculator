@@ -4,18 +4,14 @@
 #include <math.h>
 #include <string>
 #include <map>
-#include "../phisval.hpp"
 
 typedef double Real;
 
-const phisic_value<-1,3,-2,double> Gamma(6.6743e-11);
-// #define Gamma (Real(6.6743e-11))
+#define Gamma (Real(6.6743e-11))
 
 struct Skybody {
   std::string enname,runame;
-  distance_value<Real> radius;
-  mass_value<Real> mass;
-  time_value<Real> period;
+  Real radius,mass,period;
 };
 
 class Unit {
@@ -43,10 +39,10 @@ class HyperbolicOrbit;
 class Orbit {
 protected:
   Skybody c;
-  phisic_value<0,3,-2,Real> MG;
+  Real MG;
 public:
   virtual Orbit_type type() const =0;
-  Orbit(const Skybody& b) : c(b), MG(b.mass*Gamma) {}
+  Orbit(const Skybody& b) : c(b), MG(MG=b.mass*Gamma) {}
   virtual operator CircleOrbit() const=0;
   virtual operator EllipseOrbit() const=0;
   virtual operator ParabolicOrbit() const=0;
@@ -56,31 +52,26 @@ public:
 };
 
 class CircleOrbit : public Orbit {
-  distance_value<Real> r;
-  speed_value<Real> s;
-  time_value<Real> p;
+  Real r, s, p;
 public:
   CircleOrbit(const Skybody& b) 
   : Orbit(b), r(NAN), s(NAN), p(NAN) {}
   Orbit_type type() const { return CIRCLE_ORBITE; }
-  void setradius(distance_value<Real>);
-  void setspeed(speed_value<Real>);
-  void setperiod(time_value<Real>);
+  void setradius(Real);
+  void setspeed(Real);
+  void setperiod(Real);
   operator CircleOrbit() const { return *this; }
   operator EllipseOrbit() const;
   operator ParabolicOrbit() const;
   operator HyperbolicOrbit() const;
   bool legal() const;
-  distance_value<Real> radius() const { return r; }
-  speed_value<Real> speed() const { return s; }
-  time_value<Real> period() const { return p; }
+  Real radius() const { return r; }
+  Real speed() const { return s; }
+  Real period() const { return p; }
 };
 
 class EllipseOrbit : public Orbit {
-  distance_value<Real> rp, ra, a, b;
-  speed_value<Real> vp, va;
-  time_value<Real> t;
-  Real e;
+  Real rp, ra, vp, va, t, e, a, b;
   void calcrpra();
   void calcarp();
   void calcerp();
@@ -104,34 +95,33 @@ class EllipseOrbit : public Orbit {
   void calcbe();
 public:
   EllipseOrbit(const Skybody& b)
-  : Orbit(b), rp(NAN), ra(NAN), a(NAN), b(NAN), vp(NAN), va(NAN), t(NAN), e(NAN) {}
+  : Orbit(b), rp(NAN), ra(NAN), vp(NAN), va(NAN), t(NAN), e(NAN), a(NAN), b(NAN) {}
   Orbit_type type() const { return ELLIPSE_ORBIT; }
   operator CircleOrbit() const;
   operator EllipseOrbit() const { return *this; }
   operator ParabolicOrbit() const;
   operator HyperbolicOrbit() const;
   bool legal() const;
-  distance_value<Real> perigey() const { return rp; }
-  distance_value<Real> apogey() const { return ra; }
-  speed_value<Real> pspeed() const { return vp; }
-  speed_value<Real> aspeed() const { return va; }
-  time_value<Real> period() const { return t; }
+  Real perigey() const { return rp; }
+  Real apogey() const { return ra; }
+  Real pspeed() const { return vp; }
+  Real aspeed() const { return va; }
+  Real period() const { return t; }
   Real excentrisitet() const { return e; }
-  distance_value<Real> bigsize() const { return a; }
-  distance_value<Real> smallsize() const { return b; }
-  void setperigey(distance_value<Real>);
-  void setapogey(distance_value<Real>);
-  void setpspeed(speed_value<Real>);
-  void setaspeed(speed_value<Real>);
-  void setperiod(time_value<Real>);
+  Real bigsize() const { return a; }
+  Real smallsize() const { return b; }
+  void setperigey(Real);
+  void setapogey(Real);
+  void setpspeed(Real);
+  void setaspeed(Real);
+  void setperiod(Real);
   void setexcentrisitet(Real);
-  void setbigsize(distance_value<Real>);
-  void setsmallsize(distance_value<Real>);
+  void setbigsize(Real);
+  void setsmallsize(Real);
 };
 
 class ParabolicOrbit : public Orbit {
-  distance_value<Real> rp;
-  speed_value<Real> vp;
+  Real rp, vp;
 public:
   ParabolicOrbit(const Skybody& b)
   : Orbit(b), rp(NAN), vp(NAN) {}
@@ -141,16 +131,14 @@ public:
   operator ParabolicOrbit() const { return *this; }
   operator HyperbolicOrbit() const;
   bool legal() const;
-  distance_value<Real> perigey() const { return rp; }
-  speed_value<Real> pspeed() const { return vp; }
-  void setperigey(distance_value<Real>);
-  void setpspeed(speed_value<Real>);
+  Real perigey() const { return rp; }
+  Real pspeed() const { return vp; }
+  void setperigey(Real);
+  void setpspeed(Real);
 };
 
 class HyperbolicOrbit : public Orbit {
-  distance_value<Real> rp, d;
-  speed_value<Real> vp, vi;
-  Real t,e;
+  Real rp, vp, vi, t, e, d;
   void calcrpvp();
   void calcrpvi();
   void calcerp();
@@ -163,39 +151,28 @@ class HyperbolicOrbit : public Orbit {
   void calcdvi();
 public:
   HyperbolicOrbit(const Skybody& b)
-  : Orbit(b), rp(NAN), d(NAN), vp(NAN), vi(NAN), t(NAN), e(NAN) {}
+  : Orbit(b), rp(NAN), vp(NAN), vi(NAN), t(NAN), e(NAN), d(NAN) {}
   Orbit_type type() const { return HYPERBOLIC_ORBIT; }
   operator CircleOrbit() const;
   operator EllipseOrbit() const;
   operator ParabolicOrbit() const;
   operator HyperbolicOrbit() const { return *this; }
   bool legal() const;
-  distance_value<Real> perigey() const { return rp; }
-  speed_value<Real> pspeed() const { return vp; }
-  speed_value<Real> ispeed() const { return vi; }
+  Real perigey() const { return rp; }
+  Real pspeed() const { return vp; }
+  Real ispeed() const { return vi; }
   Real turn() const { return t; }
   Real excentrisitet() const { return e; }
-  distance_value<Real> goal() const { return d; }
-  void setperigey(distance_value<Real>);
-  void setpspeed(speed_value<Real>);
-  void setispeed(speed_value<Real>);
+  Real goal() const { return d; }
+  void setperigey(Real);
+  void setpspeed(Real);
+  void setispeed(Real);
   void setturn(Real);
   void setexcentrisitet(Real);
-  void setgoal(distance_value<Real>);
+  void setgoal(Real);
 };
 
 extern std::map<std::string, Skybody*> skybodies;
 extern Unit massunit, sizeunit, timeunit, speedunit, angleunit;
-
-template<int m, int d, int t, typename real>
-phisic_value<m/2,d/2,t/2,real> cubicsolve(phisic_value<m,d,t,real> p, phisic_value<m+m/2,d+d/2,t+t/2,real> q) {
-  dummy<0> r{dummy<m%2+d%2+t%2>()};
-  auto D=p*p*p/27.+q*q/4.;
-  if(D.value()>0) {
-    auto R=sqrt(D);
-    return cbrt(R-q/2.)-cbrt(R+q/2.);
-  } else
-    return phisic_value<m/2,d/2,t/2,real>(NAN);
-}
 
 #endif

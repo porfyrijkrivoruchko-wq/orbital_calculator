@@ -137,7 +137,7 @@
         this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
         this.aspeed=this.pspeed*this.perigey/this.apogey;
       } else if(this.aspeed) {
-        this.apogey=Math.sqrt(sqr(this.perigey)/2+2*this.center.MG*this.perigey/sqr(this.aspeed))-this.perigey/2;
+        this.apogey=(this.perigey+Math.sqrt(sqr(this.perigey)+8*this.center.MG*this.perigey*sqr(this.aspeed)))/(2*sqr(this.aspeed));
         this.a=(this.perigey+this.apogey)/2;
         this.excentrisitet=(this.a-this.perigey)/this.a;
         this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
@@ -182,7 +182,7 @@
         this.b=this.a*Math.sqrt(1-sqr(this.excentrisitet));
         this.pspeed=this.aspeed*this.apogey/this.perigey;
       } else if(this.pspeed) {
-        this.perigey=Math.sqrt(sqr(this.apogey)/2+2*this.center.MG*this.apogey/sqr(this.pspeed))-this.apogey/2;
+        this.perigey=(this.apogey+Math.sqrt(sqr(this.apogey)+8*this.center.MG*this.apogey*sqr(this.pspeed)))/(2*sqr(this.pspeed));
         this.a=(this.perigey+this.apogey)/2;
         this.excentrisitet=(this.a-this.perigey)/this.a;
         this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
@@ -320,7 +320,7 @@
         this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
         this.aspeed=this.pspeed*this.perigey/this.apogey;
       } else if(this.apogey) {
-        this.perigey=Math.sqrt(sqr(this.apogey)/2+2*this.center.MG*this.apogey/sqr(this.pspeed))-this.apogey/2;
+        this.perigey=(this.apogey+Math.sqrt(sqr(this.apogey)+8*this.center.MG*this.apogey*sqr(this.pspeed)))/(2*sqr(this.pspeed));
         this.a=(this.perigey+this.apogey)/2;
         this.excentrisitet=(this.a-this.perigey)/this.a;
         this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
@@ -358,7 +358,7 @@
         this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);
         this.pspeed=this.aspeed*this.apogey/this.perigey;
       } else if(this.perigey) {
-        this.apogey=Math.sqrt(sqr(this.perigey)/2+2*this.center.MG*this.perigey/sqr(this.aspeed))-this.perigey/2;
+        this.apogey=(this.perigey+Math.sqrt(sqr(this.perigey)+8*this.center.MG*this.perigey*sqr(this.aspeed)))/(2*sqr(this.aspeed));
         this.a=(this.perigey+this.apogey)/2;
         this.excentrisitet=(this.a-this.perigey)/this.a;
         this.period=2*Math.PI*this.a*Math.sqrt(this.a/this.center.MG);

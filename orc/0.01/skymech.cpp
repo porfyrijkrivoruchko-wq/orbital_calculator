@@ -3,6 +3,15 @@
 #include <vector>
 #include "skymech.hpp"
 
+Real cubicsolve(Real p, Real q) {
+  Real d=p*p*p/27+q*q/4;
+  if(d>0) {
+    d=sqrt(d);
+    return cbrt(d-q/2)-cbrt(d+q/2);
+  } else
+    return NAN;
+}
+
 Real Unit::operator()(std::string v) const {
   char* tail;
   Real r=strtod(v.c_str(),&tail);
@@ -14,43 +23,43 @@ Real Unit::operator()(std::string v) const {
   return r;
 }
 
-void CircleOrbit::setradius(distance_value<Real> _r) {
+void CircleOrbit::setradius(Real _r) {
   r=_r;
   s=sqrt(M_2_PI*MG/r);
   p=M_2_PI*r/s;
 }
 
-void CircleOrbit::setspeed(speed_value<Real> _s) {
+void CircleOrbit::setspeed(Real _s) {
   s=_s;
-  r=MG/sqr(s);
-  p=M_2_PI*MG/pow(s,dummy<3>());
+  r=MG/(s*s);
+  p=M_2_PI*MG/(s*s*s);
 }
 
-void CircleOrbit::setperiod(time_value<Real> _p) {
+void CircleOrbit::setperiod(Real _p) {
   p=_p;
-  s=cbrt(M_2_PI*MG/p);
-  r=s*p/M_2_PI;
+  s=pow(M_2_PI*MG/p,1./3);
+  r=s*p/(M_2_PI);
 }
 
 bool CircleOrbit::legal() const {
-  if(!isnan(r.value()) && r<c.radius)
+  if(!isnan(r) && r<c.radius)
     return false;
-  if(!isnan(s.value()) && s<=speed_value<Real>(0))
+  if(!isnan(s) && s<=0)
     return false;
-  if(!isnan(p.value()) && p<=time_value<Real>(0))
+  if(!isnan(p) && p<=0)
     return false;
   return true;
 }
 
 CircleOrbit::operator EllipseOrbit() const {
   EllipseOrbit e(c);
-  if(!isnan(r.value())) {
+  if(!isnan(r)) {
     e.setperigey(r);
     e.setapogey(r);
-  } else if(!isnan(s.value())) {
+  } else if(!isnan(s)) {
     e.setpspeed(s);
     e.setaspeed(s);
-  } else if(!isnan(p.value())) {
+  } else if(!isnan(p)) {
     e.setperiod(p);
     e.setexcentrisitet(1.);
   }
@@ -59,63 +68,63 @@ CircleOrbit::operator EllipseOrbit() const {
 
 CircleOrbit::operator ParabolicOrbit() const {
   ParabolicOrbit po(c);
-  if(!isnan(r.value()))
+  if(!isnan(r))
     po.setperigey(r);
-  else if(!isnan(s.value()))
+  else if(!isnan(s))
     po.setpspeed(s);
   return po;
 }
 
 CircleOrbit::operator HyperbolicOrbit() const {
   HyperbolicOrbit h(c);
-  if(!isnan(r.value()))
+  if(!isnan(r))
     h.setperigey(r);
-  else if(!isnan(s.value()))
+  else if(!isnan(s))
     h.setpspeed(s);
   return h;
 }
 
 EllipseOrbit::operator CircleOrbit() const {
   CircleOrbit co(c);
-  if(!isnan(a.value()))
+  if(!isnan(a))
     co.setradius(a);
-  else if(!isnan(rp.value()))
+  else if(!isnan(rp))
     co.setradius(rp);
-  else if(!isnan(ra.value()))
+  else if(!isnan(ra))
     co.setradius(ra);
-  else if(!isnan(b.value()))
+  else if(!isnan(b))
     co.setradius(b);
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     co.setspeed(vp);
-  else if(!isnan(va.value()))
-    co.setspeed(va);
-  else if(!isnan(t.value()))
+  else if(!isnan(va))
+    co.setradius(va);
+  else if(!isnan(t))
     co.setperiod(t);
   return co;
 }
 
 EllipseOrbit::operator ParabolicOrbit() const {
   ParabolicOrbit p(c);
-  if(isnan(rp.value()))
+  if(isnan(rp))
     p.setperigey(rp);
-  else if(!isnan(ra.value()))
+  else if(!isnan(ra))
     p.setperigey(ra);
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     p.setpspeed(vp);
-  else if(!isnan(va.value()))
+  else if(!isnan(va))
     p.setpspeed(va);
   return p;
 }
 
 EllipseOrbit::operator HyperbolicOrbit() const {
   HyperbolicOrbit h(c);
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     h.setperigey(rp);
-  else if(!isnan(ra.value()))
+  else if(!isnan(ra))
     h.setperigey(ra);
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     h.setpspeed(vp);
-  else if(!isnan(va.value()))
+  else if(!isnan(va))
     h.setispeed(va);
   else if(!isnan(e))
     h.setexcentrisitet(e<1.?1./e:e);
@@ -123,16 +132,16 @@ EllipseOrbit::operator HyperbolicOrbit() const {
 }
 
 void EllipseOrbit::calcarp() {
-  ra=2.*a-rp;
+  ra=2*a-rp;
   e=(a-rp)/a;
-  b=a*sqrt(1.-e*e);
+  b=a*sqrt(1-e*e);
   vp=sqrt(MG*ra/(a*rp));
   va=vp*rp/ra;
 }
 
 void EllipseOrbit::calcbrp() {
-  ra=sqr(b)/rp;
-  a=(rp+ra)/2.;
+  ra=b*b/rp;
+  a=(rp+ra)/2;
   t=M_2_PI*a*sqrt(a/MG);
   e=(a-rp)/a;
   vp=sqrt(MG*ra/(a*rp));
@@ -140,19 +149,19 @@ void EllipseOrbit::calcbrp() {
 }
 
 void EllipseOrbit::calcrpra() {
-  a=(rp+ra)/2.;
+  a=(rp+ra)/2;
   t=M_2_PI*a*sqrt(a/MG);
   e=(ra-rp)/(ra+rp);
-  b=a*sqrt(1.-e*e);
+  b=a*sqrt(1-e*e);
   vp=sqrt(MG*ra/(a*rp));
   va=vp*rp/ra;
 }
 
 void EllipseOrbit::calcerp() {
   ra=rp*(1+e)/(1-e);
-  a=(rp+ra)/2.;
+  a=(rp+ra)/2;
   t=M_2_PI*a*sqrt(a/MG);
-  a=(rp+ra)/2.;
+  a=(rp+ra)/2;
   t=M_2_PI*a*sqrt(a/MG);
   b=a*sqrt(1-e*e);
   vp=sqrt(MG*ra/(a*rp));
@@ -160,8 +169,8 @@ void EllipseOrbit::calcerp() {
 }
 
 void EllipseOrbit::calcrpvp() {
-  ra=rp*rp/(2.*MG/sqr(vp)-rp);
-  a=(rp+ra)/2.;
+  ra=rp*rp/(2*MG/(vp*vp)-rp);
+  a=(rp+ra)/2;
   t=M_2_PI*a*sqrt(a/MG);
   e=(a-rp)/a;
   b=a*sqrt(1-e*e);
@@ -169,8 +178,8 @@ void EllipseOrbit::calcrpvp() {
 }
 
 void EllipseOrbit::calcrpva() {
-  ra=sqrt(sqr(rp)/4.+2.*MG*rp/sqr(va))-rp/2.;
-  a=(rp+ra)/2.;
+  ra=(rp+sqrt(rp*rp+8*MG*rp*va*va))/(2*va*va);
+  a=(rp+ra)/2;
   t=M_2_PI*a*sqrt(a/MG);
   e=(a-rp)/a;
   b=a*sqrt(1-e*e);
@@ -178,7 +187,7 @@ void EllipseOrbit::calcrpva() {
 }
 
 void EllipseOrbit::calcara() {
-  rp=2.*a-ra;
+  rp=2*a-ra;
   e=(a-rp)/a;
   b=a*sqrt(1.-e*e);
   t=M_2_PI*a*sqrt(a/MG);
@@ -188,7 +197,7 @@ void EllipseOrbit::calcara() {
 
 void EllipseOrbit::calcbra() {
   rp=b*b/ra;
-  a=(rp+ra)/2.;
+  a=(rp+ra)/2;
   t=M_2_PI*a*sqrt(a/MG);
   e=(a-rp)/a;
   vp=sqrt(MG*ra/(a*rp));
@@ -197,7 +206,7 @@ void EllipseOrbit::calcbra() {
 
 void EllipseOrbit::calcera() {
   rp=ra*(1+e)/(1-e);
-  a=(rp+ra)/2.;
+  a=(rp+ra)/2;
   t=M_2_PI*a*sqrt(a/MG);
   e=(a-rp)/a;
   b=a*sqrt(1.-e*e);
@@ -206,8 +215,8 @@ void EllipseOrbit::calcera() {
 }
 
 void EllipseOrbit::calcrava() {
-  rp=ra*ra/(2.*MG/(va*va)-ra);
-  a=(rp+ra)/2.;
+  rp=ra*ra/(2*MG/(va*va)-ra);
+  a=(rp+ra)/2;
   t=M_2_PI*a*sqrt(a/MG);
   e=(a-rp)/a;
   b=a*sqrt(1.-e*e);
@@ -215,8 +224,8 @@ void EllipseOrbit::calcrava() {
 }
 
 void EllipseOrbit::calcravp() {
-  rp=sqrt(sqr(ra)/4.+2.*MG*ra/sqr(vp))-ra/2.;
-  a=(rp+ra)/2.;
+  rp=(ra+sqrt(ra*ra+8*MG*ra*vp*vp))/(2*vp*vp);
+  a=(rp+ra)/2;
   t=M_2_PI*a*sqrt(a/MG);
   e=(a-rp)/a;
   b=a*sqrt(1.-e*e);
@@ -225,7 +234,7 @@ void EllipseOrbit::calcravp() {
 
 void EllipseOrbit::calcab() {
   rp=a-sqrt(a*a-b*b);
-  ra=2.*a-rp;
+  ra=2*a-rp;
   e=(a-rp)/a;
   vp=sqrt(MG*ra/(a*rp));
   va=vp*rp/ra;
@@ -241,16 +250,16 @@ void EllipseOrbit::calcae() {
 
 void EllipseOrbit::calcava() {
   vp=MG/(va*a);
-  rp=2.*MG/(vp*(vp+va));
-  ra=2.*a-rp;
+  rp=2*MG/(vp*(vp+va));
+  ra=2*a-rp;
   e=(a-rp)/a;
   b=a*sqrt(1.-e*e);
 }
 
 void EllipseOrbit::calcavp() {
   va=MG/(vp*a);
-  rp=2.*MG/(vp*(vp+va));
-  ra=2.*a-rp;
+  rp=2*MG/(vp*(vp+va));
+  ra=2*a-rp;
   e=(a-rp)/a;
   b=a*sqrt(1.-e*e);
 }
@@ -259,24 +268,24 @@ void EllipseOrbit::calcbe() {
   a=b/sqrt(1.-e*e);
   t=M_2_PI*a*sqrt(a/MG);
   rp=a-sqrt(a*a-b*b);
-  ra=2.*a-rp;
+  ra=2*a-rp;
   vp=sqrt(MG*ra/(a*rp));
   va=vp*rp/ra;
 }
 
 void EllipseOrbit::calcbva() {
-  ra=cubicsolve(b*b,-2.*MG*(b*b)/(va*va));
-  rp=ra*ra/(2.*MG/(va*va)-ra);
-  a=(rp+ra)/2.;
+  ra=cubicsolve(b*b,-2*MG*(b*b)/(va*va));
+  rp=ra*ra/(2*MG/(va*va)-ra);
+  a=(rp+ra)/2;
   t=M_2_PI*a*sqrt(a/MG);
   e=(a-rp)/a;
   vp=va*ra/rp;
 }
 
 void EllipseOrbit::calcbvp() {
-  rp=cubicsolve(b*b,-2.*MG*(b*b)/(vp*vp));
-  ra=rp*rp/(2.*MG/(vp*vp)-rp);
-  a=(rp+ra)/2.;
+  rp=cubicsolve(b*b,-2*MG*(b*b)/(vp*vp));
+  ra=rp*rp/(2*MG/(vp*vp)-rp);
+  a=(rp+ra)/2;
   t=M_2_PI*a*sqrt(a/MG);
   e=(a-rp)/a;
   va=vp*rp/ra;
@@ -284,210 +293,210 @@ void EllipseOrbit::calcbvp() {
 
 void EllipseOrbit::calceva() {
   vp=va*(1.+e)/(1.-e);
-  a=MG/(vp*va);
+  a=MG/(vp+va);
   t=M_2_PI*a*sqrt(a/MG);
-  rp=2.*a*va/(vp+va);
-  ra=2.*a-rp;
-  b=a*sqrt(1.-e*e);
+  rp=2*a*va/(vp+va);
+  ra=2*a-rp;
+  b=a*sqrt(1.-a*a);
 }
 
 void EllipseOrbit::calcevp() {
   va=vp*(1.-e)/(1.+e);
-  a=MG/(vp*va);
+  a=MG/(vp+va);
   t=M_2_PI*a*sqrt(a/MG);
-  rp=2.*a*va/(vp+va);
-  ra=2.*a-rp;
-  b=a*sqrt(1.-e*e);
+  rp=2*a*va/(vp+va);
+  ra=2*a-rp;
+  b=a*sqrt(1.-a*a);
 }
 
 void EllipseOrbit::calcvpva() {
-  a=MG/(vp*va);
+  a=MG/(vp+va);
   t=M_2_PI*a*sqrt(a/MG);
   e=(vp-va)/(vp+va);
-  rp=2.*a*va/(vp+va);
-  ra=2.*a-rp;
-  b=a*sqrt(1.-e*e);
+  rp=2*a*va/(vp+va);
+  ra=2*a-rp;
+  b=a*sqrt(1.-a*a);
 }
 
-void EllipseOrbit::setperigey(distance_value<Real> p) {
+void EllipseOrbit::setperigey(Real p) {
   rp=p;
-  if(!isnan(ra.value()))
+  if(!isnan(ra))
     calcrpra();
-  else if(!isnan(a.value()))
+  else if(!isnan(a))
     calcarp();
   else if(!isnan(e))
     calcerp();
-  else if(!isnan(b.value()))
+  else if(!isnan(b))
     calcbrp();
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     calcrpvp();
-  else if(!isnan(va.value()))
+  else if(!isnan(va))
     calcrpva();
 }
 
-void EllipseOrbit::setapogey(distance_value<Real> r) {
+void EllipseOrbit::setapogey(Real r) {
   ra=r;
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     calcrpra();
-  else if(!isnan(a.value()))
+  else if(!isnan(a))
     calcara();
-  else if(!isnan(b.value()))
+  else if(!isnan(b))
     calcbra();
   else if(!isnan(e))
     calcera();
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     calcravp();
-  else if(!isnan(va.value()))
+  else if(!isnan(va))
     calcrava();
 }
 
-void EllipseOrbit::setpspeed(speed_value<Real> s) {
+void EllipseOrbit::setpspeed(Real s) {
   vp=s;
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     calcrpvp();
-  else if(!isnan(ra.value()))
+  else if(!isnan(ra))
     calcravp();
-  else if(!isnan(a.value()))
+  else if(!isnan(a))
     calcavp();
-  else if(!isnan(b.value()))
+  else if(!isnan(b))
     calcbvp();
   else if(!isnan(e))
     calcevp();
-  else if(!isnan(va.value()))
+  else if(!isnan(va))
     calcvpva();
 }
 
-void EllipseOrbit::setaspeed(speed_value<Real> s) {
+void EllipseOrbit::setaspeed(Real s) {
   va=s;
-  if(!isnan(ra.value()))
+  if(!isnan(ra))
     calcravp();
-  else if(!isnan(rp.value()))
+  else if(!isnan(rp))
     calcrpva();
-  else if(!isnan(a.value()))
+  else if(!isnan(a))
     calcava();
-  else if(!isnan(b.value()))
+  else if(!isnan(b))
     calcbva();
   else if(!isnan(e))
     calceva();
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     calcvpva();
 }
 
-void EllipseOrbit::setbigsize(distance_value<Real> s) {
+void EllipseOrbit::setbigsize(Real s) {
   a=s;
   t=M_2_PI*a*sqrt(a/MG);
-  if(!isnan(b.value()))
+  if(!isnan(b))
     calcab();
-  else if(!isnan(rp.value()))
+  else if(!isnan(rp))
     calcarp();
-  else if(!isnan(ra.value()))
+  else if(!isnan(ra))
     calcara();
   else if(!isnan(e))
     calcae();
-  else if(!isnan(va.value()))
+  else if(!isnan(va))
     calcava();
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     calcavp();
 }
 
-void EllipseOrbit::setsmallsize(distance_value<Real> s) {
+void EllipseOrbit::setsmallsize(Real s) {
   a=s;
-  if(!isnan(a.value()))
+  if(!isnan(a))
     calcab();
   else if(!isnan(e))
     calcbe();
-  else if(!isnan(rp.value()))
+  else if(!isnan(rp))
     calcbrp();
-  else if(!isnan(ra.value()))
+  else if(!isnan(ra))
     calcbrp();
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     calcbvp();
-  else if(!isnan(va.value()))
+  else if(!isnan(va))
     calcbva();
 }
 
 void EllipseOrbit::setexcentrisitet(Real ex) {
   e=ex;
-  if(!isnan(a.value()))
+  if(!isnan(a))
     calcae();
-  else if(!isnan(b.value()))
+  else if(!isnan(b))
     calcbe();
-  else if(!isnan(rp.value()))
+  else if(!isnan(rp))
     calcerp();
-  else if(!isnan(ra.value()))
+  else if(!isnan(ra))
     calcera();
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     calcevp();
-  else if(!isnan(va.value()))
+  else if(!isnan(va))
     calceva();
 }
 
-void EllipseOrbit::setperiod(time_value<Real> p) {
+void EllipseOrbit::setperiod(Real p) {
   t=p;
-  a=cbrt(MG*sqr(t/M_2_PI));
-  if(!isnan(b.value()))
+  a=pow(MG,1./3)*pow(t/M_2_PI,2./3);
+  if(!isnan(b))
     calcab();
-  else if(!isnan(rp.value()))
+  else if(!isnan(rp))
     calcarp();
-  else if(!isnan(ra.value()))
+  else if(!isnan(ra))
     calcara();
   else if(!isnan(e))
     calcae();
-  else if(!isnan(va.value()))
+  else if(!isnan(va))
     calcava();
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     calcavp();
 }
 
 bool EllipseOrbit::legal() const {
-  if(!isnan(rp.value()) && rp<c.radius)
+  if(!isnan(rp) && rp<c.radius)
     return false;
-  if(!isnan(rp.value()) && !isnan(ra.value()) && rp>ra)
+  if(!isnan(rp) && !isnan(ra) && rp>ra)
     return false;
   if(!isnan(e) && (e<0 || e>=1.))
     return false;
-  if(!isnan(a.value()) && a<c.radius)
+  if(!isnan(a) && a<c.radius)
     return false;
-  if(!isnan(b.value()) && b<c.radius)
+  if(!isnan(b) && b<c.radius)
     return false;
   return true;
 }
 
 ParabolicOrbit::operator CircleOrbit() const {
   CircleOrbit co(c);
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     co.setradius(rp);
   return co;
 }
 
 ParabolicOrbit::operator EllipseOrbit() const {
   EllipseOrbit e(c);
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     e.setperigey(rp);
   return e;
 }
 
 ParabolicOrbit::operator HyperbolicOrbit() const {
   HyperbolicOrbit h(c);
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     h.setperigey(rp);
-  if(!isnan(vp.value()))
+  if(!isnan(vp))
     h.setpspeed(vp);
   return h;
 }
 
-void ParabolicOrbit::setperigey(distance_value<Real> p) {
+void ParabolicOrbit::setperigey(Real p) {
   rp=p;
-  vp=sqrt(2.*MG/rp);
+  vp=sqrt(2*MG/rp);
 }
 
-void ParabolicOrbit::setpspeed(speed_value<Real> s) {
+void ParabolicOrbit::setpspeed(Real s) {
   vp=s;
-  rp=2.*MG/(vp*vp);
+  rp=2*MG/(rp*rp);
 }
 
 bool ParabolicOrbit::legal() const {
-  if(!isnan(rp.value()) && rp<c.radius)
+  if(!isnan(rp) && rp<c.radius)
     return false;
   return true;
 }
@@ -500,26 +509,26 @@ void HyperbolicOrbit::calcde() {
 
 void HyperbolicOrbit::calcdrp() {
   e=(d*d+rp*rp)/(d*d-rp*rp);
-  t=2.*asin(1./e);
+  t=2*asin(1./e);
   vp=sqrt(MG/(e+1.)/rp);
   vi=sqrt(MG*(e-1.)/rp);
 }
 
 void HyperbolicOrbit::calcdvi() {
-  speed_value<Real> f=MG/(vi*d);
+  Real f=MG/(vi*d);
   vp=f+hypot(f,vi);
-  rp=2.*MG/(vp*vp-vi*vi);
+  rp=2*MG/(vp*vp-vi*vi);
   e=(vp*vp+vi*vi)/(vp*vp-vi*vi);
   t=2*asin(1./e);
 }
 
 void HyperbolicOrbit::calcdvp() {
   // Здесь нужно решать кубическое уравнение
-  vi=cubicsolve(-vp*vp,2.*MG*vp/d);
-  if(isnan(vi.value())) // Если более одного корня, оставляем значения неопределенными
-    d=distance_value<Real>(NAN);
+  vi=cubicsolve(-vp*vp,2*MG*vp/d);
+  if(isnan(vi)) // Если более одного корня, оставляем значения неопределенными
+    d=NAN;
   else {
-    rp=2.*MG/(vp*vp-vi*vi);
+    rp=2*MG/(vp*vp-vi*vi);
     e=(vp*vp+vi*vi)/(vp*vp-vi*vi);
     t=2*asin(1./e);
   }
@@ -533,32 +542,32 @@ void HyperbolicOrbit::calcerp() {
 
 void HyperbolicOrbit::calcevi() {
   vp=vi*sqrt((e+1.)/(e-1.));
-  rp=2.*MG/(vp*vp-vi*vi);
+  rp=2*MG/(vp*vp-vi*vi);
   d=rp*vp/vi;
 }
 
 void HyperbolicOrbit::calcevp() {
   vi=vp*sqrt((e-1.)/(e+1.));
-  rp=2.*MG/(vp*vp-vi*vi);
+  rp=2*MG/(vp*vp-vi*vi);
   d=rp*vp/vi;
 }
 
 void HyperbolicOrbit::calcrpvi() {
-  vp=sqrt(vi*vi+2.*MG/rp);
+  vp=sqrt(vi*vi+2*MG/rp);
   e=(vp*vp+vi*vi)/(vp*vp-vi*vi);
   t=2*asin(1./e);
   d=rp*vp/vi;
 }
 
 void HyperbolicOrbit::calcrpvp() {
-  vi=sqrt(vp*vp-2.*MG/rp);
+  vi=sqrt(vp*vp-2*MG/rp);
   e=(vp*vp+vi*vi)/(vp*vp-vi*vi);
   t=2*asin(1./e);
   d=rp*vp/vi;
 }
 
 void HyperbolicOrbit::calcvpvi() {
-  rp=2.*MG/(vp*vp-vi*vi);
+  rp=2*MG/(vp*vp-vi*vi);
   e=(vp*vp+vi*vi)/(vp*vp-vi*vi);
   t=2*asin(1./e);
   d=rp*vp/vi;
@@ -566,93 +575,93 @@ void HyperbolicOrbit::calcvpvi() {
 
 HyperbolicOrbit::operator CircleOrbit() const {
   CircleOrbit co(c);
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     co.setradius(rp);
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     co.setspeed(vp);
-  else if(!isnan(vi.value()))
+  else if(!isnan(vi))
     co.setspeed(vi);
   return co;
 }
 
 HyperbolicOrbit::operator ParabolicOrbit() const {
   ParabolicOrbit p(c);
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     p.setperigey(rp);
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     p.setpspeed(vp);
-  else if(!isnan(vi.value()))
+  else if(!isnan(vi))
     p.setpspeed(vi);
   return p;
 }
 
 HyperbolicOrbit::operator EllipseOrbit() const {
   EllipseOrbit o(c);
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     o.setperigey(rp);
   if(!isnan(e))
     o.setexcentrisitet(e>1.?1./e:e);
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     o.setpspeed(vp);
   return o;
 }
 
-void HyperbolicOrbit::setperigey(distance_value<Real> r) {
+void HyperbolicOrbit::setperigey(Real r) {
   rp=r;
-  if(!isnan(vp.value()))
+  if(!isnan(vp))
     calcrpvp();
-  else if(!isnan(vi.value()))
+  else if(!isnan(vi))
     calcrpvi();
   else if(!isnan(e))
     calcerp();
-  else if(!isnan(d.value()))
+  else if(!isnan(d))
     calcdrp();
 }
 
-void HyperbolicOrbit::setpspeed(speed_value<Real> s) {
+void HyperbolicOrbit::setpspeed(Real s) {
   vp=s;
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     calcrpvp();
-  else if(!isnan(vi.value()))
+  else if(!isnan(vi))
     calcvpvi();
   else if(!isnan(e))
     calcevp();
-  else if(!isnan(d.value()))
+  else if(!isnan(d))
     calcdvp();
 }
 
-void HyperbolicOrbit::setispeed(speed_value<Real> s) {
+void HyperbolicOrbit::setispeed(Real s) {
   vi=s;
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     calcrpvi();
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     calcvpvi();
   else if(!isnan(e))
     calcevi();
-  else if(!isnan(d.value()))
+  else if(!isnan(d))
     calcdvi();
 }
 
 void HyperbolicOrbit::setturn(Real _t) {
   t=_t;
   e=1./sin(t/2.);
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     calcerp();
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     calcevp();
-  else if(!isnan(vi.value()))
+  else if(!isnan(vi))
     calcevi();
-  else if(!isnan(d.value()))
+  else if(!isnan(d))
     calcde();
 }
 
-void HyperbolicOrbit::setgoal(distance_value<Real> g) {
+void HyperbolicOrbit::setgoal(Real g) {
   d=g;
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     calcdrp();
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     calcdvp();
-  else if(!isnan(vi.value()))
+  else if(!isnan(vi))
     calcdvi();
   else if(!isnan(e))
     calcde();
@@ -661,24 +670,24 @@ void HyperbolicOrbit::setgoal(distance_value<Real> g) {
 void HyperbolicOrbit::setexcentrisitet(Real _e) {
   e=_e;
   t=2*asin(1./e);
-  if(!isnan(rp.value()))
+  if(!isnan(rp))
     calcerp();
-  else if(!isnan(vp.value()))
+  else if(!isnan(vp))
     calcevp();
-  else if(!isnan(vi.value()))
+  else if(!isnan(vi))
     calcevi();
-  else if(!isnan(d.value()))
+  else if(!isnan(d))
     calcde();
 }
 
 bool HyperbolicOrbit::legal() const {
-  if(!isnan(rp.value()) && rp<c.radius)
+  if(!isnan(rp) && rp<c.radius)
     return false;
   if(!isnan(e) && e<1.)
     return false;
-  if(!isnan(vp.value()) && vp<=speed_value<Real>(0))
+  if(!isnan(vp) && vp<=0)
     return false;
-  if(!isnan(vi.value()) && vi<speed_value<Real>(0))
+  if(!isnan(vi) && vi<0)
     return false;
   if(!isnan(t) && (t<=0 || t>M_PI))
     return false;
@@ -757,13 +766,13 @@ Initial::Initial() {
     b.runame=p;
     p=strtok(NULL,",\n");
     if(!p) continue;
-    b.mass=mass_value<Real>(massunit(p));
+    b.mass=massunit(p);
     p=strtok(NULL,",\n");
     if(!p) continue;
-    b.radius=distance_value<Real>(sizeunit(p));
+    b.radius=sizeunit(p);
     p=strtok(NULL,",\n");
     if(!p) continue;
-    b.period=time_value<Real>(timeunit(p));
+    b.period=timeunit(p);
     lstbodies.push_back(b);
   }
   fclose(f);
