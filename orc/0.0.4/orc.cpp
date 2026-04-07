@@ -335,7 +335,7 @@ int main(int argc, const char* argv[]) {
           try {
             lp.push_back(std::pair<std::string,Real>{name, parms[name]?(*parms[name])(p):atof(p)});
           } catch(std::string msg) {
-            std::cerr << "Ошибка интерпретации параметра" << argv[i] << '\n';
+            std::cerr << "Ошибка интерпретации параметра: " << argv[i] << '\n';
             return 1;
           }
         }

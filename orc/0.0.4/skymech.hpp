@@ -28,13 +28,14 @@ public:
     vlst.insert(std::pair<std::string,Real>{n,v});
   }
   Real operator()(std::string) const;
-  std::map<std::string,Real>::const_iterator operator[](std::string n) const {
-    auto p=vlst.upper_bound(n);
-    if(p!=vlst.end() && !strncmp(n.c_str(),(*p).first.c_str(),(*p).first.size()))
-      return p;
-    else return end();
-  }
   typedef std::map<std::string, Real>::const_iterator iterator;
+  iterator operator[](std::string n) const {
+    auto p=end();
+    for(auto i=begin(); i!=end(); ++i)
+      if(!strncmp(n.c_str(),(*i).first.c_str(),(*i).first.size()))
+        p=i;
+    return p;
+  }
   iterator begin() const { return vlst.begin(); }
   iterator end() const { return vlst.end(); }
   std::string operator()(Real) const;
